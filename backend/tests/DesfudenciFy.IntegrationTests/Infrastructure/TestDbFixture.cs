@@ -1,0 +1,100 @@
+using DesfudenciFy.Application.Abstractions;
+using DesfudenciFy.Application.Services;
+using DesfudenciFy.Domain.Entities;
+using DesfudenciFy.Domain.Enums;
+using DesfudenciFy.Infrastructure.Persistence;
+using Microsoft.EntityFrameworkCore;
+
+namespace DesfudenciFy.IntegrationTests.Infrastructure;
+
+public sealed class TestDbFixture : IAsyncDisposable
+{
+    public AppDbContext Db { get; }
+    public IAppDbContext AppDb { get; }
+    public BalanceService Balance { get; }
+    public EntryService Entries { get; }
+    public ReserveService Reserves { get; }
+    public InvestmentService Investments { get; }
+    public PropertyService Properties { get; }
+    public FixedCostService FixedCosts { get; }
+    public PurchaseService Purchases { get; }
+
+    public TestDbFixture()
+    {
+        var options = new DbContextOptionsBuilder<AppDbContext>()
+            .UseInMemoryDatabase($"desfudencify-tests-{Guid.NewGuid()}")
+            .Options;
+
+        Db = new AppDbContext(options);
+        Db.Database.EnsureCreated();
+
+        AppDb = new AppDbContextAdapter(Db);
+        Balance = new BalanceService(AppDb);
+        Entries = new EntryService(AppDb, Balance);
+        Reserves = new ReserveService(AppDb, Balance);
+        Investments = new InvestmentService(AppDb, Balance);
+        Properties = new PropertyService(AppDb, new NoOpFileStorage(), Balance);
+        FixedCosts = new FixedCostService(AppDb, Balance);
+        Purchases = new PurchaseService(AppDb);
+    }
+
+    public async Task<Reserve> SeedReserveAsync(string name = "Reserva")
+    {
+        var reserve = new Reserve { Name = name, Description = "", Goal = 0 };
+        Db.Reserves.Add(reserve);
+        await Db.SaveChangesAsync();
+        return reserve;
+    }
+
+    public async Task CreditFreeAsync(decimal amount, string observation = "Crédito livre")
+    {
+        Db.Entries.Add(new Entry
+        {
+            Amount = amount,
+            Observation = observation,
+            OccurredAt = DateTime.UtcNow,
+            Destination = EntryDestination.FreeBalance
+        });
+        await Db.SaveChangesAsync();
+    }
+
+    public async Task CreditReserveAsync(Guid reserveId, decimal amount, string observation = "Crédito reserva")
+    {
+        Db.Entries.Add(new Entry
+        {
+            Amount = amount,
+            Observation = observation,
+            OccurredAt = DateTime.UtcNow,
+            Destination = EntryDestination.Reserve,
+            ReserveId = reserveId
+        });
+        await Db.SaveChangesAsync();
+    }
+
+    public async Task<(BankAccount Bank, InvestmentType Type)> SeedInvestmentCatalogAsync()
+    {
+        var bank = new BankAccount { Name = "XP", Description = "", IsActive = true };
+        var type = new InvestmentType { Name = "CDB", Description = "", IsActive = true };
+        Db.BankAccounts.Add(bank);
+        Db.InvestmentTypes.Add(type);
+        await Db.SaveChangesAsync();
+        return (bank, type);
+    }
+
+    public ValueTask DisposeAsync()
+    {
+        Db.Dispose();
+        return ValueTask.CompletedTask;
+    }
+
+    private sealed class NoOpFileStorage : IFileStorage
+    {
+        public Task<string> SavePropertyPhotoAsync(Guid propertyId, Stream content, string fileName, CancellationToken cancellationToken = default) =>
+            Task.FromResult($"properties/{propertyId}/{fileName}");
+
+        public Task DeleteAsync(string relativePath, CancellationToken cancellationToken = default) =>
+            Task.CompletedTask;
+
+        public string GetAbsolutePath(string relativePath) => relativePath;
+    }
+}
