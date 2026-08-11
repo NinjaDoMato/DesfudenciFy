@@ -1,0 +1,17 @@
+.git
+.gitignore
+**/.git
+**/node_modules
+**/dist
+**/bin
+**/obj
+**/.vs
+**/*.user
+**/data/uploads
+**/.env
+**/.env.*
+!**/.env.example
+backend/tools
+backend/tests
+**/*.md
+!frontend/nginx.conf

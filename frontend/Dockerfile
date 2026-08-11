@@ -3,6 +3,9 @@ WORKDIR /app
 COPY frontend/package*.json ./
 RUN npm install
 COPY frontend/ ./
+# Reinstall after COPY so Linux binaries aren't overwritten by a host node_modules
+RUN npm install \
+ && chmod +x node_modules/.bin/* || true
 ARG VITE_API_BASE_URL=/api/v1
 ARG VITE_API_ORIGIN=
 ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
