@@ -4,6 +4,7 @@ using Microsoft.Extensions.Configuration;
 var configuration = new ConfigurationBuilder()
     .SetBasePath(AppContext.BaseDirectory)
     .AddJsonFile("appsettings.json", optional: true, reloadOnChange: false)
+    .AddJsonFile("appsettings.Local.json", optional: true, reloadOnChange: false)
     .AddEnvironmentVariables()
     .AddCommandLine(NormalizeArgs(args))
     .Build();
@@ -41,9 +42,14 @@ if (string.IsNullOrWhiteSpace(legacy) || string.IsNullOrWhiteSpace(target))
     return 1;
 }
 
+var seedAdmin = new SeedAdminOptions(
+    Email: FirstNonEmpty(configuration["Seed:AdminEmail"], "admin@desfudencify.local")!,
+    Password: FirstNonEmpty(configuration["Seed:AdminPassword"], "Admin@12345")!,
+    FullName: FirstNonEmpty(configuration["Seed:AdminFullName"], "Administrator")!);
+
 try
 {
-    var runner = new MigrationRunner(legacy, target, wipeTarget, dryRun, skipConfirm);
+    var runner = new MigrationRunner(legacy, target, wipeTarget, dryRun, skipConfirm, seedAdmin);
     return await runner.RunAsync(CancellationToken.None);
 }
 catch (Exception ex)

@@ -22,6 +22,7 @@ Personal finance platform rewritten with a Clean Architecture .NET 8 API and Vue
 ## Quick start (Docker)
 
 ```bash
+cp .env.example .env   # optional; edit secrets for anything beyond local play
 docker compose up --build
 ```
 
@@ -30,6 +31,27 @@ docker compose up --build
 - Default admin: `admin@desfudencify.local` / `Admin@12345`
 
 Property photos persist in `./data/uploads`.
+
+## Deploy on Raspberry Pi (LAN)
+
+Requirements: Raspberry Pi OS 64-bit (Pi 4/5 recommended), Docker Engine + Compose plugin.
+
+1. Copy the project to the Pi (git clone, `scp`, or USB).
+2. On the Pi:
+
+```bash
+cp .env.example .env
+# Edit .env: strong POSTGRES_PASSWORD, JWT_KEY, SEED_ADMIN_PASSWORD
+mkdir -p data/uploads
+docker compose up --build -d
+```
+
+3. From any device on the same network open `http://<raspberry-ip>:8080`  
+   (find the IP with `hostname -I`). Swagger: `http://<raspberry-ip>:5080/swagger`.
+
+The web container proxies `/api` to the API, so the browser only needs the Pi IP and port 8080. First build on the Pi can take 15–40 minutes; later starts are much faster.
+
+To stop: `docker compose down` — data stays in the `postgres_data` volume and `./data/uploads`.
 
 ## Local development
 

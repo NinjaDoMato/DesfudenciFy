@@ -11,4 +11,5 @@ frontend/dist/
 
 # Local secrets
 **/appsettings.Development.json
+**/appsettings.Local.json
 

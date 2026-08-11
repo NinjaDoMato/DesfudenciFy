@@ -1,9 +1,15 @@
 using DesfudenciFy.Domain.Entities;
 using DesfudenciFy.Domain.Enums;
+using DesfudenciFy.Infrastructure.Auth;
 using DesfudenciFy.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
 namespace LegacyMigrator;
+
+internal sealed record SeedAdminOptions(
+    string Email,
+    string Password,
+    string FullName);
 
 internal sealed class MigrationRunner
 {
@@ -12,19 +18,22 @@ internal sealed class MigrationRunner
     private readonly bool _wipeTarget;
     private readonly bool _dryRun;
     private readonly bool _skipConfirm;
+    private readonly SeedAdminOptions _seedAdmin;
 
     public MigrationRunner(
         string legacyConnection,
         string targetConnection,
         bool wipeTarget,
         bool dryRun,
-        bool skipConfirm)
+        bool skipConfirm,
+        SeedAdminOptions seedAdmin)
     {
         _legacyConnection = legacyConnection;
         _targetConnection = targetConnection;
         _wipeTarget = wipeTarget;
         _dryRun = dryRun;
         _skipConfirm = skipConfirm;
+        _seedAdmin = seedAdmin;
     }
 
     public async Task<int> RunAsync(CancellationToken cancellationToken)
@@ -32,6 +41,7 @@ internal sealed class MigrationRunner
         Console.WriteLine("=== DesfudenciFy Legacy Migrator ===");
         Console.WriteLine($"Modo: {(_dryRun ? "dry-run (somente leitura/contagem)" : "escrita")}");
         Console.WriteLine($"Wipe do PostgreSQL: {_wipeTarget}");
+        Console.WriteLine($"Admin seed: {_seedAdmin.Email}");
         Console.WriteLine();
 
         Console.WriteLine("Lendo MySQL legado...");
@@ -81,7 +91,7 @@ internal sealed class MigrationRunner
             Console.WriteLine("PostgreSQL de destino limpo.");
         }
 
-        var plan = BuildPlan(snapshot);
+        var plan = BuildPlan(snapshot, _seedAdmin);
         PrintPlan(plan);
 
         if (_dryRun)
@@ -158,7 +168,7 @@ internal sealed class MigrationRunner
             cancellationToken);
     }
 
-    private static MigrationPlan BuildPlan(LegacySnapshot snapshot)
+    private static MigrationPlan BuildPlan(LegacySnapshot snapshot, SeedAdminOptions seedAdmin)
     {
         var plan = new MigrationPlan();
         var droppedOwners = 0;
@@ -228,7 +238,7 @@ internal sealed class MigrationRunner
             plan.Users.Add(new User
             {
                 Id = user.Id,
-                Email = LegacyMappings.Truncate(user.Email, 256),
+                Email = LegacyMappings.Truncate(user.Email.Trim().ToLowerInvariant(), 256),
                 PasswordHash = user.PasswordHash,
                 FullName = LegacyMappings.Truncate(LegacyMappings.FullNameFromEmail(user.Email), 200),
                 IsActive = true,
@@ -238,6 +248,8 @@ internal sealed class MigrationRunner
                 LastUpdate = user.LastUpdate
             });
         }
+
+        EnsureSeedAdmin(plan, seedAdmin);
 
         foreach (var reserve in snapshot.Reserves)
         {
@@ -530,6 +542,41 @@ internal sealed class MigrationRunner
         await transaction.CommitAsync(cancellationToken);
     }
 
+    private static void EnsureSeedAdmin(MigrationPlan plan, SeedAdminOptions seedAdmin)
+    {
+        var email = seedAdmin.Email.Trim().ToLowerInvariant();
+        var hasher = new BcryptPasswordHasher();
+        var passwordHash = hasher.Hash(seedAdmin.Password);
+        var existing = plan.Users.FirstOrDefault(u =>
+            string.Equals(u.Email, email, StringComparison.OrdinalIgnoreCase));
+
+        if (existing is not null)
+        {
+            existing.Role = UserRole.Admin;
+            existing.FullName = LegacyMappings.Truncate(seedAdmin.FullName, 200);
+            existing.PasswordHash = passwordHash;
+            existing.IsActive = true;
+            plan.SeedAdminIncluded = true;
+            plan.SeedAdminNote = $"Admin seed aplicado ao usuário legado existente ({email}).";
+            return;
+        }
+
+        plan.Users.Add(new User
+        {
+            Id = LegacyMappings.StableGuid("SeedAdmin:" + email),
+            Email = LegacyMappings.Truncate(email, 256),
+            PasswordHash = passwordHash,
+            FullName = LegacyMappings.Truncate(seedAdmin.FullName, 200),
+            IsActive = true,
+            Role = UserRole.Admin,
+            LastLoginAt = null,
+            DateCreated = DateTime.UtcNow,
+            LastUpdate = null
+        });
+        plan.SeedAdminIncluded = true;
+        plan.SeedAdminNote = $"Admin seed criado ({email}).";
+    }
+
     private static void PrintSourceSummary(LegacySnapshot snapshot)
     {
         Console.WriteLine("Dados lidos do legado:");
@@ -549,6 +596,11 @@ internal sealed class MigrationRunner
     {
         Console.WriteLine("Plano de escrita (PostgreSQL):");
         Console.WriteLine($"  Users              : {plan.Users.Count}");
+        if (plan.SeedAdminIncluded && !string.IsNullOrWhiteSpace(plan.SeedAdminNote))
+        {
+            Console.WriteLine($"    • {plan.SeedAdminNote}");
+        }
+
         Console.WriteLine($"  BankAccounts       : {plan.BankAccounts.Count}");
         Console.WriteLine($"  InvestmentTypes    : {plan.InvestmentTypes.Count}");
         Console.WriteLine($"  Reserves           : {plan.Reserves.Count}");
@@ -598,5 +650,7 @@ internal sealed class MigrationRunner
         public List<string> DroppedOwnerNotes { get; } = [];
         public int DroppedOwnerCount { get; set; }
         public int DroppedSplitCount { get; set; }
+        public bool SeedAdminIncluded { get; set; }
+        public string? SeedAdminNote { get; set; }
     }
 }

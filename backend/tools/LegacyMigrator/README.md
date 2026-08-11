@@ -16,20 +16,21 @@ Connection strings (qualquer uma das fontes):
 
 | Fonte | Chaves |
 |--------|--------|
-| `appsettings.json` | `LegacyMySql`, `TargetPostgres` |
+| `appsettings.json` | `LegacyMySql`, `TargetPostgres` (template, versionado) |
+| `appsettings.Local.json` | Sobrescreve o template — **não versionar** (senha local) |
 | Variáveis de ambiente | `LEGACY_MYSQL_CONNECTION`, `TARGET_POSTGRES_CONNECTION` |
 | CLI | `--legacy-mysql "..."`, `--target-postgres "..."` |
 
-Exemplo `appsettings.json`:
+Crie `appsettings.Local.json` ao lado do projeto (já no `.gitignore`):
 
 ```json
 {
-  "LegacyMySql": "Server=127.0.0.1;Port=3306;Database=finances;User=root;Password=root;",
-  "TargetPostgres": "Host=localhost;Port=5432;Database=desfudencify_dev;Username=desfudencify;Password=desfudencify"
+  "LegacyMySql": "Server=HOST;Port=3306;Database=finances;User=root;Password=SENHA;SslMode=None;AllowPublicKeyRetrieval=True;",
+  "TargetPostgres": "Host=localhost;Port=5432;Database=desfudencify;Username=desfudencify;Password=desfudencify"
 }
 ```
 
-Para o Postgres do `docker compose` do DesfudenciFy_2, use a connection string publicada na porta do host (ex.: `localhost:5432`).
+Para o Postgres do `docker compose` do DesfudenciFy_2, use a porta publicada no host (`127.0.0.1:5433` → container `5432`, database `desfudencify`). A porta **5433** evita conflito com um PostgreSQL instalado localmente na 5432.
 
 ## Como executar
 
@@ -71,7 +72,7 @@ IDs (`Guid`) das entidades principais são **preservados**. Contas e tipos criad
 
 | Legado (MySQL) | Novo (PostgreSQL) | Observações |
 |---------------|-------------------|-------------|
-| `Users` | `Users` | `FullName` derivado do e-mail; 1º usuário (por data) vira `Admin`; hash BCrypt mantido |
+| `Users` | `Users` | `FullName` derivado do e-mail; 1º usuário (por data) vira `Admin`; hash BCrypt mantido. **Sempre** inclui também o admin seed (`admin@desfudencify.local` / `Admin@12345`, configurável em `Seed:*`) |
 | `AccountType` (enum em Investment) | `BankAccounts` | Uma conta por valor usado (Modal, XP, NuInvest, Bradesco, Wise) |
 | `InvestmentType` (enum) | `InvestmentTypes` | Nomes: CDB, Tesouro SELIC, FII, LCI, LCA, Viagem (+ seeds padrão) |
 | `Reserves` | `Reserves` | **`Owner` (Daniel/Cassia/Comum) descartado** |
