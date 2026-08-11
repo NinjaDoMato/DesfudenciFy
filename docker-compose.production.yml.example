@@ -27,7 +27,7 @@ services:
       dockerfile: backend/Dockerfile
     restart: unless-stopped
     environment:
-      ASPNETCORE_ENVIRONMENT: Docker
+      ASPNETCORE_ENVIRONMENT: Production
       ConnectionStrings__DefaultConnection: Host=postgres;Port=5432;Database=desfudencify;Username=desfudencify;Password=CHANGE_ME_STRONG_PASSWORD
       Jwt__Key: CHANGE_ME_TO_A_LONG_RANDOM_SECRET_AT_LEAST_32_CHARS
       Jwt__Issuer: DesfudenciFy

@@ -44,8 +44,9 @@ cp .env.example .env
 # Edit .env only if you use the default docker-compose.yml
 
 cp backend/src/DesfudenciFy.Api/appsettings.json.example backend/src/DesfudenciFy.Api/appsettings.json
+cp backend/src/DesfudenciFy.Api/appsettings.Production.json.example backend/src/DesfudenciFy.Api/appsettings.Production.json
 cp docker-compose.production.yml.example docker-compose.production.yml
-# Edit both files with the same production secrets
+# Edit the three files with the same production secrets
 
 mkdir -p data/uploads
 docker compose -f docker-compose.production.yml up --build -d

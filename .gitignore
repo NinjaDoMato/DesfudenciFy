@@ -14,4 +14,5 @@ frontend/dist/
 **/appsettings.Local.json
 
 backend/src/DesfudenciFy.Api/appsettings.json
+backend/src/DesfudenciFy.Api/appsettings.Production.json
 docker-compose.production.yml
