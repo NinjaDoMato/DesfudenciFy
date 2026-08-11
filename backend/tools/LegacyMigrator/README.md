@@ -16,57 +16,56 @@ Connection strings (qualquer uma das fontes):
 
 | Fonte | Chaves |
 |--------|--------|
-| `appsettings.json` | `LegacyMySql`, `TargetPostgres` (template, versionado) |
+| `appsettings.json` | `LegacyMySql`, `Targets:dev`, `Targets:prod`, `TargetEnvironment` |
 | `appsettings.Local.json` | Sobrescreve o template — **não versionar** (senha local) |
-| Variáveis de ambiente | `LEGACY_MYSQL_CONNECTION`, `TARGET_POSTGRES_CONNECTION` |
-| CLI | `--legacy-mysql "..."`, `--target-postgres "..."` |
+| Variáveis de ambiente | `LEGACY_MYSQL_CONNECTION`, `TARGET_POSTGRES_CONNECTION`, `TARGET_ENVIRONMENT` |
+| CLI | `--target dev\|prod`, `--legacy-mysql "..."`, `--target-postgres "..."` |
 
-O `appsettings.json` padrão aponta para o **ambiente de desenvolvimento** (`docker-compose.development.yml`):
+O destino é escolhido por **ambiente** (`dev` ou `prod`). Padrão: `TargetEnvironment` no `appsettings.json` (ou `dev`).
 
-| | Valor |
-|--|--------|
-| Host / porta | `localhost:5434` |
-| Database | `desfudencify_dev` |
-| User / senha | `desfudencify` / `desfudencify` |
-| Seed admin | `admin@desfudencify.local` / `Admin@12345` |
+| Ambiente | Porta host | Database | Compose |
+|----------|------------|----------|---------|
+| `dev` | **5434** | `desfudencify_dev` | `docker-compose.development.yml` |
+| `prod` | **5433** | `desfudencify` | `docker-compose.production.yml` |
 
-Crie `appsettings.Local.json` ao lado do projeto (já no `.gitignore`) para sobrescrever (ex.: MySQL legado ou Postgres de produção):
+Exemplo de `appsettings.json`:
 
 ```json
 {
   "LegacyMySql": "Server=HOST;Port=3306;Database=finances;User=root;Password=SENHA;SslMode=None;AllowPublicKeyRetrieval=True;",
-  "TargetPostgres": "Host=localhost;Port=5434;Database=desfudencify_dev;Username=desfudencify;Password=desfudencify"
+  "TargetEnvironment": "dev",
+  "Targets": {
+    "dev": "Host=localhost;Port=5434;Database=desfudencify_dev;Username=desfudencify;Password=desfudencify",
+    "prod": "Host=localhost;Port=5433;Database=desfudencify;Username=desfudencify;Password=SENHA_PROD"
+  },
+  "Seed": {
+    "AdminEmail": "admin@desfudencify.local",
+    "AdminPassword": "Admin@12345",
+    "AdminFullName": "Administrator"
+  }
 }
 ```
 
-Portas publicadas no host (Compose):
-
-| Ambiente | Porta host | Database |
-|----------|------------|----------|
-| Desenvolvimento | **5434** | `desfudencify_dev` |
-| Produção | **5433** | `desfudencify` |
-
-Para migrar para produção, use `appsettings.Local.json` ou `--target-postgres` com `Host=…;Port=5433;Database=desfudencify;…`.
+`--target-postgres` / `TARGET_POSTGRES_CONNECTION` sobrescrevem a seleção por ambiente.
 
 ## Como executar
 
 Na raiz do repositório DesfudenciFy_2:
 
 ```powershell
-# Somente leitura / contagem (não grava)
-dotnet run --project backend/tools/LegacyMigrator -- --dry-run
+# Somente leitura / contagem no ambiente de desenvolvimento
+dotnet run --project backend/tools/LegacyMigrator -- --target dev --dry-run
 
-# Importar em banco vazio (falha se já houver dados)
-dotnet run --project backend/tools/LegacyMigrator --
+# Importar para desenvolvimento
+dotnet run --project backend/tools/LegacyMigrator -- --target dev
 
-# Apagar destino e importar (digite MIGRATE quando pedido)
-dotnet run --project backend/tools/LegacyMigrator -- --wipe-target
+# Importar para produção (apaga destino — digite MIGRATE quando pedido)
+dotnet run --project backend/tools/LegacyMigrator -- --target prod --wipe-target
 
 # Wipe não interativo (CI / script)
 $env:LEGACY_MIGRATE_CONFIRM = "MIGRATE"
-dotnet run --project backend/tools/LegacyMigrator -- --wipe-target --yes
+dotnet run --project backend/tools/LegacyMigrator -- --target prod --wipe-target --yes
 ```
-
 Build:
 
 ```powershell
