@@ -25,13 +25,13 @@ var legacy = FirstNonEmpty(
     configuration["ConnectionStrings:LegacyMySql"],
     Environment.GetEnvironmentVariable("LEGACY_MYSQL_CONNECTION"));
 
-string target;
+string? target;
 string targetSource;
 string targetEnvironment;
 try
 {
     targetEnvironment = ResolveTargetEnvironment(configuration);
-    (target, targetSource) = ResolveTargetConnection(configuration, targetEnvironment);
+    (target, targetSource) = ResolveTargetConnection(configuration, targetEnvironment, args);
 }
 catch (InvalidOperationException ex)
 {
@@ -98,17 +98,25 @@ static string ResolveTargetEnvironment(IConfiguration configuration)
 
 static (string? Connection, string Source) ResolveTargetConnection(
     IConfiguration configuration,
-    string targetEnvironment)
+    string targetEnvironment,
+    string[] rawArgs)
 {
-    // 1) Override explícito (CLI --target-postgres, env, ConnectionStrings)
-    var explicitOverride = FirstNonEmpty(
-        AsConnectionString(configuration["TargetPostgres"]),
-        AsConnectionString(configuration["ConnectionStrings:TargetPostgres"]),
-        AsConnectionString(configuration["ConnectionStrings:DefaultConnection"]),
-        AsConnectionString(Environment.GetEnvironmentVariable("TARGET_POSTGRES_CONNECTION")));
+    // 1) Override explícito (CLI --target-postgres / env / ConnectionStrings)
+    var hasCliOverride = GetFlagValue(rawArgs, "--target-postgres") is not null;
+    if (hasCliOverride
+        || !string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("TARGET_POSTGRES_CONNECTION"))
+        || AsConnectionString(configuration["ConnectionStrings:TargetPostgres"]) is not null
+        || AsConnectionString(configuration["ConnectionStrings:DefaultConnection"]) is not null)
+    {
+        var explicitOverride = FirstNonEmpty(
+            hasCliOverride ? AsConnectionString(configuration["TargetPostgres"]) : null,
+            AsConnectionString(configuration["ConnectionStrings:TargetPostgres"]),
+            AsConnectionString(configuration["ConnectionStrings:DefaultConnection"]),
+            AsConnectionString(Environment.GetEnvironmentVariable("TARGET_POSTGRES_CONNECTION")));
 
-    if (explicitOverride is not null)
-        return (explicitOverride, "override explícito");
+        if (explicitOverride is not null)
+            return (explicitOverride, "override explícito");
+    }
 
     // 2) Targets:{dev|prod}
     var fromTargets = FirstNonEmpty(
@@ -118,7 +126,24 @@ static (string? Connection, string Source) ResolveTargetConnection(
     if (!string.IsNullOrWhiteSpace(fromTargets))
         return (fromTargets, $"Targets:{targetEnvironment}");
 
+    // 3) Compat: TargetPostgres flat (appsettings antigo / Local.json)
+    var legacyFlat = AsConnectionString(configuration["TargetPostgres"]);
+    if (legacyFlat is not null)
+        return (legacyFlat, "TargetPostgres (legado)");
+
     return (null, "nenhuma");
+}
+
+static string? GetFlagValue(string[] rawArgs, string flag)
+{
+    for (var i = 0; i < rawArgs.Length; i++)
+    {
+        if (!string.Equals(rawArgs[i], flag, StringComparison.OrdinalIgnoreCase))
+            continue;
+        return i + 1 < rawArgs.Length ? rawArgs[i + 1] : null;
+    }
+
+    return null;
 }
 
 static string? AsConnectionString(string? value) =>
