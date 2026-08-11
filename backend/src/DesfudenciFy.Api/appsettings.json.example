@@ -1,0 +1,26 @@
+{
+  "ConnectionStrings": {
+    "DefaultConnection": "Host=postgres;Port=5432;Database=desfudencify;Username=desfudencify;Password=CHANGE_ME_STRONG_PASSWORD"
+  },
+  "Jwt": {
+    "Key": "CHANGE_ME_TO_A_LONG_RANDOM_SECRET_AT_LEAST_32_CHARS!",
+    "Issuer": "DesfudenciFy",
+    "Audience": "DesfudenciFy",
+    "ExpiresHours": "12"
+  },
+  "Seed": {
+    "AdminEmail": "admin@desfudencify.local",
+    "AdminPassword": "CHANGE_ME_ADMIN_PASSWORD",
+    "AdminFullName": "Administrator"
+  },
+  "Storage": {
+    "RootPath": "/app/data/uploads"
+  },
+  "Logging": {
+    "LogLevel": {
+      "Default": "Warning",
+      "Microsoft.AspNetCore": "Warning"
+    }
+  },
+  "AllowedHosts": "*"
+}

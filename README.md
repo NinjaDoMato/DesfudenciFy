@@ -41,9 +41,14 @@ Requirements: Raspberry Pi OS 64-bit (Pi 4/5 recommended), Docker Engine + Compo
 
 ```bash
 cp .env.example .env
-# Edit .env: strong POSTGRES_PASSWORD, JWT_KEY, SEED_ADMIN_PASSWORD
+# Edit .env only if you use the default docker-compose.yml
+
+cp backend/src/DesfudenciFy.Api/appsettings.json.example backend/src/DesfudenciFy.Api/appsettings.json
+cp docker-compose.production.yml.example docker-compose.production.yml
+# Edit both files with the same production secrets
+
 mkdir -p data/uploads
-docker compose up --build -d
+docker compose -f docker-compose.production.yml up --build -d
 ```
 
 3. From any device on the same network open `http://<raspberry-ip>:8080`  
