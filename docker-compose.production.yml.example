@@ -2,6 +2,8 @@
 # cp docker-compose.production.yml.example docker-compose.production.yml
 # docker compose -f docker-compose.production.yml up --build -d
 
+name: desfudencify-prod
+
 services:
   postgres:
     image: postgres:16-alpine

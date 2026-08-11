@@ -25,14 +25,27 @@ Personal finance platform rewritten with a Clean Architecture .NET 8 API and Vue
 docker compose -f docker-compose.development.yml up --build -d
 ```
 
-- Web UI: http://localhost:8080 (tarja amarela “Ambiente de desenvolvimento”)
-- API / Swagger: http://localhost:5080/swagger
-- Postgres (host): `localhost:5434` — database `desfudencify_dev`
+| Serviço | Porta host |
+|---------|------------|
+| Web | **8081** |
+| API / Swagger | **5081** |
+| Postgres | **5434** (`desfudencify_dev`) |
+
+- UI: http://localhost:8081 (tarja amarela “Ambiente de desenvolvimento”)
+- Swagger: http://localhost:5081/swagger
 - Default admin: `admin@desfudencify.local` / `Admin@12345`
 
-Property photos persist in `./data/uploads`.
+Dev e prod podem rodar ao mesmo tempo (projetos Docker `desfudencify-dev` / `desfudencify-prod`).
+
+Property photos (dev): `./data/uploads-dev`.
 
 ### Produção (Raspberry Pi / LAN)
+
+| Serviço | Porta host |
+|---------|------------|
+| Web | **8080** |
+| API | **5080** |
+| Postgres | **5433** |
 
 Requirements: Raspberry Pi OS 64-bit (Pi 4/5 recommended), Docker Engine + Compose plugin.
 
@@ -53,11 +66,11 @@ docker compose -f docker-compose.production.yml up --build -d
 ```
 
 3. From any device on the same network open `http://<raspberry-ip>:8080`  
-   (find the IP with `hostname -I`). Swagger: `http://<raspberry-ip>:5080/swagger`.
+   (find the IP with `hostname -I`). API: `http://<raspberry-ip>:5080`.
 
 The web container proxies `/api` to the API, so the browser only needs the Pi IP and port 8080. First build on the Pi can take 15–40 minutes; later starts are much faster.
 
-To stop: `docker compose down` — data stays in the `postgres_data` volume and `./data/uploads`.
+To stop: `docker compose -f docker-compose.production.yml down` — data stays in the `postgres_data` volume and `./data/uploads`.
 
 ## Local development
 

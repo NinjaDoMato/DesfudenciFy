@@ -4,6 +4,8 @@ obj/
 *.user
 data/uploads/**
 !data/uploads/.gitkeep
+data/uploads-dev/**
+!data/uploads-dev/.gitkeep
 frontend/node_modules/
 frontend/dist/
 .env

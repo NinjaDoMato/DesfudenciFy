@@ -21,16 +21,32 @@ Connection strings (qualquer uma das fontes):
 | Variáveis de ambiente | `LEGACY_MYSQL_CONNECTION`, `TARGET_POSTGRES_CONNECTION` |
 | CLI | `--legacy-mysql "..."`, `--target-postgres "..."` |
 
-Crie `appsettings.Local.json` ao lado do projeto (já no `.gitignore`):
+O `appsettings.json` padrão aponta para o **ambiente de desenvolvimento** (`docker-compose.development.yml`):
+
+| | Valor |
+|--|--------|
+| Host / porta | `localhost:5434` |
+| Database | `desfudencify_dev` |
+| User / senha | `desfudencify` / `desfudencify` |
+| Seed admin | `admin@desfudencify.local` / `Admin@12345` |
+
+Crie `appsettings.Local.json` ao lado do projeto (já no `.gitignore`) para sobrescrever (ex.: MySQL legado ou Postgres de produção):
 
 ```json
 {
   "LegacyMySql": "Server=HOST;Port=3306;Database=finances;User=root;Password=SENHA;SslMode=None;AllowPublicKeyRetrieval=True;",
-  "TargetPostgres": "Host=localhost;Port=5432;Database=desfudencify;Username=desfudencify;Password=desfudencify"
+  "TargetPostgres": "Host=localhost;Port=5434;Database=desfudencify_dev;Username=desfudencify;Password=desfudencify"
 }
 ```
 
-Para o Postgres do `docker compose` do DesfudenciFy_2, use a porta publicada no host (`127.0.0.1:5433` → container `5432`, database `desfudencify`). A porta **5433** evita conflito com um PostgreSQL instalado localmente na 5432.
+Portas publicadas no host (Compose):
+
+| Ambiente | Porta host | Database |
+|----------|------------|----------|
+| Desenvolvimento | **5434** | `desfudencify_dev` |
+| Produção | **5433** | `desfudencify` |
+
+Para migrar para produção, use `appsettings.Local.json` ou `--target-postgres` com `Host=…;Port=5433;Database=desfudencify;…`.
 
 ## Como executar
 
@@ -72,7 +88,7 @@ IDs (`Guid`) das entidades principais são **preservados**. Contas e tipos criad
 
 | Legado (MySQL) | Novo (PostgreSQL) | Observações |
 |---------------|-------------------|-------------|
-| `Users` | `Users` | `FullName` derivado do e-mail; 1º usuário (por data) vira `Admin`; hash BCrypt mantido. **Sempre** inclui também o admin seed (`admin@desfudencify.local` / `Admin@12345`, configurável em `Seed:*`) |
+| `Users` | `Users` | `FullName` derivado do e-mail; 1º usuário (por data) vira `Admin`; hash BCrypt mantido. **Sempre** inclui também o admin seed (configurável em `Seed:*`; no template de dev: `admin@desfudencify.local` / `Admin@12345`) |
 | `AccountType` (enum em Investment) | `BankAccounts` | Uma conta por valor usado (Modal, XP, NuInvest, Bradesco, Wise) |
 | `InvestmentType` (enum) | `InvestmentTypes` | Nomes: CDB, Tesouro SELIC, FII, LCI, LCA, Viagem (+ seeds padrão) |
 | `Reserves` | `Reserves` | **`Owner` (Daniel/Cassia/Comum) descartado** |
