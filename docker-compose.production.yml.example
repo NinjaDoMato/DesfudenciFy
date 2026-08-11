@@ -37,12 +37,18 @@ services:
       Seed__AdminPassword: CHANGE_ME_ADMIN_PASSWORD
       Seed__AdminFullName: Administrator
       Storage__RootPath: /app/data/uploads
-      Logging__LogLevel__Default: Warning
+      Logging__LogLevel__Default: Information
       Logging__LogLevel__Microsoft.AspNetCore: Warning
     volumes:
       - ./data/uploads:/app/data/uploads
     ports:
       - "5080:8080"
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8080/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 60s
     depends_on:
       postgres:
         condition: service_healthy
@@ -55,7 +61,8 @@ services:
     ports:
       - "8080:80"
     depends_on:
-      - api
+      api:
+        condition: service_healthy
 
 volumes:
   postgres_data:
