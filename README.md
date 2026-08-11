@@ -19,20 +19,20 @@ Personal finance platform rewritten with a Clean Architecture .NET 8 API and Vue
 - Fixed costs, income sources, installment purchases
 - Dashboard with capital history, reserve distribution, upcoming investments and bills
 
-## Quick start (Docker)
+## Quick start (Docker — desenvolvimento)
 
 ```bash
-cp .env.example .env   # optional; edit secrets for anything beyond local play
-docker compose up --build
+docker compose -f docker-compose.development.yml up --build -d
 ```
 
-- Web UI: http://localhost:8080
+- Web UI: http://localhost:8080 (tarja amarela “Ambiente de desenvolvimento”)
 - API / Swagger: http://localhost:5080/swagger
+- Postgres (host): `localhost:5434` — database `desfudencify_dev`
 - Default admin: `admin@desfudencify.local` / `Admin@12345`
 
 Property photos persist in `./data/uploads`.
 
-## Deploy on Raspberry Pi (LAN)
+### Produção (Raspberry Pi / LAN)
 
 Requirements: Raspberry Pi OS 64-bit (Pi 4/5 recommended), Docker Engine + Compose plugin.
 
@@ -82,7 +82,7 @@ npm install
 npm run dev
 ```
 
-Vite proxies `/api` to `http://localhost:5080`.
+Vite proxies `/api` to `http://localhost:5080`. A tarja amarela no topo indica ambiente de desenvolvimento.
 
 ## Solution layout
 
@@ -98,3 +98,5 @@ frontend/
 
 - Migrations run automatically on API startup, then seed admin and default investment types.
 - Change JWT key and admin password before production use.
+- Development: `docker compose -f docker-compose.development.yml up --build -d`
+- Production: `docker compose -f docker-compose.production.yml up --build -d`
