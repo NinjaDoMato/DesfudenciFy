@@ -5,9 +5,10 @@ import type { IncomeType } from '@/types'
 import DataTable from '@/components/DataTable.vue'
 import IconButton from '@/components/IconButton.vue'
 import type { DataTableColumn } from '@/composables/useDataTable'
+import { useToastStore } from '@/stores/toast'
 
+const toast = useToastStore()
 const items = ref<IncomeType[]>([])
-const error = ref('')
 const showForm = ref(false)
 const editingId = ref<string | null>(null)
 const form = reactive({ name: '', description: '', isActive: true })
@@ -18,6 +19,10 @@ const columns: DataTableColumn<IncomeType>[] = [
   { key: 'isActive', label: 'Ativo', sortValue: (row) => (row.isActive ? 1 : 0) },
   { key: 'actions', label: '', sortable: false },
 ]
+
+function toastError(e: unknown, fallback: string) {
+  toast.error(e instanceof Error ? e.message : fallback)
+}
 
 async function load() {
   const { data } = await api.get<IncomeType[]>('/admin/income-types')
@@ -37,14 +42,13 @@ function openEdit(item: IncomeType) {
 }
 
 async function save() {
-  error.value = ''
   try {
     if (editingId.value) await api.put(`/admin/income-types/${editingId.value}`, form)
     else await api.post('/admin/income-types', form)
     showForm.value = false
     await load()
   } catch (e) {
-    error.value = e instanceof Error ? e.message : 'Erro'
+    toastError(e, 'Erro')
   }
 }
 
@@ -54,12 +58,12 @@ async function remove(id: string) {
     await api.delete(`/admin/income-types/${id}`)
     await load()
   } catch (e) {
-    error.value = e instanceof Error ? e.message : 'Erro'
+    toastError(e, 'Erro')
   }
 }
 
 onMounted(async () => {
-  try { await load() } catch (e) { error.value = e instanceof Error ? e.message : 'Erro' }
+  try { await load() } catch (e) { toastError(e, 'Erro') }
 })
 </script>
 
@@ -69,7 +73,6 @@ onMounted(async () => {
       <div><h1>Tipos de entrada</h1><p class="muted">Salário, aluguel, vales e outros tipos cadastráveis.</p></div>
       <button class="btn" type="button" @click="openCreate">Novo tipo</button>
     </div>
-    <div v-if="error && !showForm" class="error">{{ error }}</div>
     <div class="panel">
       <DataTable :rows="items" :columns="columns" row-key="id" initial-sort-key="name">
         <template #cell-isActive="{ row }">{{ row.isActive ? 'Sim' : 'Não' }}</template>
@@ -81,10 +84,9 @@ onMounted(async () => {
         </template>
       </DataTable>
     </div>
-    <div v-if="showForm" class="modal-backdrop" @click.self="showForm = false; error = ''">
+    <div v-if="showForm" class="modal-backdrop" @click.self="showForm = false">
       <form class="modal" @submit.prevent="save">
         <h2>{{ editingId ? 'Editar' : 'Novo' }} tipo</h2>
-        <div v-if="error" class="error">{{ error }}</div>
         <div class="field"><label>Nome</label><input v-model="form.name" required /></div>
         <div class="field"><label>Descrição</label><textarea v-model="form.description" rows="2" /></div>
         <div class="field"><label><input v-model="form.isActive" type="checkbox" /> Ativo</label></div>

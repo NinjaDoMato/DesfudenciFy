@@ -3,25 +3,29 @@ import { ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useThemeStore } from '@/stores/theme'
+import { useToastStore } from '@/stores/toast'
 
 const auth = useAuthStore()
 const theme = useThemeStore()
+const toast = useToastStore()
 const router = useRouter()
 const route = useRoute()
 const email = ref('')
 const password = ref('')
-const error = ref('')
 const loading = ref(false)
 
+function toastError(e: unknown, fallback: string) {
+  toast.error(e instanceof Error ? e.message : fallback)
+}
+
 async function onSubmit() {
-  error.value = ''
   loading.value = true
   try {
     await auth.login(email.value, password.value)
     const redirect = typeof route.query.redirect === 'string' ? route.query.redirect : '/'
     await router.push(redirect)
   } catch (e) {
-    error.value = e instanceof Error ? e.message : 'Falha no login'
+    toastError(e, 'Falha no login')
   } finally {
     loading.value = false
   }
@@ -37,7 +41,6 @@ async function onSubmit() {
       <p class="eyebrow">DesfudenciFy</p>
       <h1>Entre na plataforma</h1>
       <p class="muted">Controle de gastos, reservas, investimentos e imóveis.</p>
-      <div v-if="error" class="error">{{ error }}</div>
       <div class="field">
         <label>Email</label>
         <input v-model="email" type="email" required autocomplete="username" />

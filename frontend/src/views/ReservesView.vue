@@ -7,12 +7,12 @@ import MoneyInput from '@/components/MoneyInput.vue'
 import DataTable from '@/components/DataTable.vue'
 import IconButton from '@/components/IconButton.vue'
 import type { DataTableColumn } from '@/composables/useDataTable'
+import { useToastStore } from '@/stores/toast'
 
 const router = useRouter()
+const toast = useToastStore()
 const items = ref<Reserve[]>([])
 const nameFilter = ref('')
-const pageError = ref('')
-const modalError = ref('')
 const showForm = ref(false)
 const form = reactive({
   name: '',
@@ -37,24 +37,25 @@ const filteredItems = computed(() => {
   return items.value.filter((item) => item.name.toLowerCase().includes(term))
 })
 
+function toastError(e: unknown, fallback: string) {
+  toast.error(e instanceof Error ? e.message : fallback)
+}
+
 async function load() {
   const { data } = await api.get<Reserve[]>('/reserves')
   items.value = data
 }
 
 function openCreate() {
-  modalError.value = ''
   Object.assign(form, { name: '', description: '', goal: 0, displayColor: '#38bdf8', monthlyGoal: 0 })
   showForm.value = true
 }
 
 function closeForm() {
   showForm.value = false
-  modalError.value = ''
 }
 
 async function save() {
-  modalError.value = ''
   try {
     const payload = {
       name: form.name,
@@ -67,18 +68,17 @@ async function save() {
     closeForm()
     await load()
   } catch (e) {
-    modalError.value = e instanceof Error ? e.message : 'Erro ao salvar'
+    toastError(e, 'Erro ao salvar')
   }
 }
 
 async function remove(id: string) {
   if (!confirm('Excluir reserva?')) return
-  pageError.value = ''
   try {
     await api.delete(`/reserves/${id}`)
     await load()
   } catch (e) {
-    pageError.value = e instanceof Error ? e.message : 'Erro ao excluir'
+    toastError(e, 'Erro ao excluir')
   }
 }
 
@@ -86,7 +86,7 @@ onMounted(async () => {
   try {
     await load()
   } catch (e) {
-    pageError.value = e instanceof Error ? e.message : 'Erro'
+    toastError(e, 'Erro')
   }
 })
 </script>
@@ -100,7 +100,6 @@ onMounted(async () => {
       </div>
       <button class="btn" type="button" @click="openCreate">Nova reserva</button>
     </div>
-    <div v-if="pageError" class="error">{{ pageError }}</div>
     <div class="panel">
       <div class="filters filters-inline">
         <div class="field filter-name">
@@ -132,7 +131,6 @@ onMounted(async () => {
     <div v-if="showForm" class="modal-backdrop" @click.self="closeForm">
       <form class="modal" @submit.prevent="save">
         <h2>Nova reserva</h2>
-        <div v-if="modalError" class="error">{{ modalError }}</div>
         <div class="field"><label>Nome</label><input v-model="form.name" required /></div>
         <div class="field"><label>Descrição</label><textarea v-model="form.description" rows="3" /></div>
         <div class="field"><label>Meta</label><MoneyInput v-model="form.goal" /></div>

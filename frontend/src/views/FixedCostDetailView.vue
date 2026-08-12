@@ -7,15 +7,15 @@ import MoneyInput from '@/components/MoneyInput.vue'
 import DataTable from '@/components/DataTable.vue'
 import IconButton from '@/components/IconButton.vue'
 import type { DataTableColumn } from '@/composables/useDataTable'
+import { useToastStore } from '@/stores/toast'
 
 const route = useRoute()
 const router = useRouter()
+const toast = useToastStore()
 const costId = computed(() => String(route.params.id))
 
 const cost = ref<FixedCost | null>(null)
 const reserves = ref<Reserve[]>([])
-const error = ref('')
-const success = ref('')
 const loading = ref(true)
 const paying = ref(false)
 
@@ -48,9 +48,12 @@ const paymentColumns: DataTableColumn<CostPayment>[] = [
 const payments = computed(() => cost.value?.payments ?? [])
 const totalPaid = computed(() => payments.value.reduce((sum, p) => sum + p.paidAmount, 0))
 
+function toastError(e: unknown, fallback: string) {
+  toast.error(e instanceof Error ? e.message : fallback)
+}
+
 async function load() {
   loading.value = true
-  error.value = ''
   try {
     const [costRes, reservesRes] = await Promise.all([
       api.get<FixedCost>(`/fixed-costs/${costId.value}`),
@@ -68,15 +71,13 @@ async function load() {
     })
     payForm.paidAmount = costRes.data.amount
   } catch (e) {
-    error.value = e instanceof Error ? e.message : 'Erro ao carregar conta'
+    toastError(e, 'Erro ao carregar conta')
   } finally {
     loading.value = false
   }
 }
 
 async function saveCost() {
-  error.value = ''
-  success.value = ''
   try {
     const { data } = await api.put<FixedCost>(`/fixed-costs/${costId.value}`, {
       name: form.name,
@@ -87,24 +88,22 @@ async function saveCost() {
       reserveId: form.reserveId || null,
     })
     cost.value = data
-    success.value = 'Conta atualizada.'
+    toast.success('Conta atualizada.')
   } catch (e) {
-    error.value = e instanceof Error ? e.message : 'Erro ao atualizar'
+    toastError(e, 'Erro ao atualizar')
   }
 }
 
 async function pay() {
-  error.value = ''
-  success.value = ''
   paying.value = true
   try {
     await api.post(`/fixed-costs/${costId.value}/payments`, {
       paidAmount: Number(payForm.paidAmount),
     })
     await load()
-    success.value = 'Pagamento registrado.'
+    toast.success('Pagamento registrado.')
   } catch (e) {
-    error.value = e instanceof Error ? e.message : 'Erro ao pagar'
+    toastError(e, 'Erro ao pagar')
   } finally {
     paying.value = false
   }
@@ -112,14 +111,12 @@ async function pay() {
 
 async function removePayment(paymentId: string) {
   if (!confirm('Remover este pagamento?')) return
-  error.value = ''
-  success.value = ''
   try {
     await api.delete(`/fixed-costs/${costId.value}/payments/${paymentId}`)
     await load()
-    success.value = 'Pagamento removido.'
+    toast.success('Pagamento removido.')
   } catch (e) {
-    error.value = e instanceof Error ? e.message : 'Erro ao remover pagamento'
+    toastError(e, 'Erro ao remover pagamento')
   }
 }
 
@@ -140,8 +137,6 @@ watch(costId, () => {
       <button class="btn secondary" type="button" @click="router.push({ name: 'fixed-costs' })">Voltar</button>
     </div>
 
-    <div v-if="error" class="error">{{ error }}</div>
-    <div v-if="success" class="success">{{ success }}</div>
     <p v-if="loading" class="muted">Carregando...</p>
 
     <template v-else-if="cost">
@@ -290,14 +285,6 @@ watch(costId, () => {
 
 .pay-form .field {
   margin-bottom: 0;
-}
-
-.success {
-  color: var(--success);
-  background: rgba(74, 222, 128, 0.1);
-  border: 1px solid rgba(74, 222, 128, 0.28);
-  padding: 0.75rem 1rem;
-  border-radius: var(--radius-sm);
 }
 
 @media (max-width: 1000px) {

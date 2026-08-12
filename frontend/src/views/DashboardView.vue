@@ -16,11 +16,13 @@ import { formatMoney, type DashboardTotals } from '@/types'
 import DataTable from '@/components/DataTable.vue'
 import type { DataTableColumn } from '@/composables/useDataTable'
 import { useThemeStore } from '@/stores/theme'
+import { useToastStore } from '@/stores/toast'
 
 ChartJS.register(BarElement, CategoryScale, LinearScale, ArcElement, Tooltip, Legend)
 
 const router = useRouter()
 const theme = useThemeStore()
+const toast = useToastStore()
 
 function cssVar(name: string, fallback: string) {
   void theme.mode
@@ -59,7 +61,9 @@ const distribution = ref<DistributionItem[]>([])
 const typeDistribution = ref<DistributionItem[]>([])
 const upcomingInvestments = ref<UpcomingInvestment[]>([])
 const upcomingBills = ref<UpcomingBill[]>([])
-const error = ref('')
+function toastError(e: unknown, fallback: string) {
+  toast.error(e instanceof Error ? e.message : fallback)
+}
 
 const upcomingBillRows = computed<UpcomingBillRow[]>(() =>
   upcomingBills.value.map((item) => ({ ...item, rowKey: `${item.id}-${item.kind}` })),
@@ -200,7 +204,7 @@ onMounted(async () => {
     upcomingInvestments.value = i.data
     upcomingBills.value = b.data
   } catch (e) {
-    error.value = e instanceof Error ? e.message : 'Erro ao carregar dashboard'
+    toastError(e, 'Erro ao carregar dashboard')
   }
 })
 </script>
@@ -213,7 +217,6 @@ onMounted(async () => {
         <p class="muted">Visão geral do capital livre, investido e compromissos.</p>
       </div>
     </div>
-    <div v-if="error" class="error">{{ error }}</div>
     <div v-if="totals" class="grid grid-4">
       <div class="kpi"><div class="label">Total acumulado</div><div class="value">{{ formatMoney(totals.totalAccumulated) }}</div></div>
       <div class="kpi"><div class="label">Saldo livre</div><div class="value">{{ formatMoney(totals.totalFreeBalance) }}</div></div>

@@ -7,6 +7,7 @@ import MoneyInput from '@/components/MoneyInput.vue'
 import DataTable from '@/components/DataTable.vue'
 import IconButton from '@/components/IconButton.vue'
 import type { DataTableColumn } from '@/composables/useDataTable'
+import { useToastStore } from '@/stores/toast'
 
 type PropertyAmortization = Property['amortizations'][number]
 type PropertyExpense = Property['expenses'][number]
@@ -16,12 +17,11 @@ type Tone = 'tone-success' | 'tone-danger' | 'tone-warning' | ''
 
 const route = useRoute()
 const router = useRouter()
+const toast = useToastStore()
 const propertyId = computed(() => String(route.params.id))
 
 const property = ref<Property | null>(null)
 const reserves = ref<Reserve[]>([])
-const error = ref('')
-const success = ref('')
 const loading = ref(true)
 const activeTab = ref<DetailTab>('amortization')
 const photoFile = ref<File | null>(null)
@@ -177,9 +177,12 @@ function onPhotoSelected(event: Event) {
   }
 }
 
+function toastError(e: unknown, fallback: string) {
+  toast.error(e instanceof Error ? e.message : fallback)
+}
+
 async function load() {
   loading.value = true
-  error.value = ''
   try {
     const [propertyRes, reservesRes] = await Promise.all([
       api.get<Property>(`/properties/${propertyId.value}`),
@@ -195,15 +198,13 @@ async function load() {
       amortForm.amount = propertyRes.data.installmentAmount
     }
   } catch (e) {
-    error.value = e instanceof Error ? e.message : 'Erro ao carregar imóvel'
+    toastError(e, 'Erro ao carregar imóvel')
   } finally {
     loading.value = false
   }
 }
 
 async function save() {
-  error.value = ''
-  success.value = ''
   try {
     const { data } = await api.put<Property>(`/properties/${propertyId.value}`, {
       name: form.name,
@@ -232,15 +233,13 @@ async function save() {
     }
 
     syncFormFromProperty(property.value)
-    success.value = 'Imóvel atualizado.'
+    toast.success('Imóvel atualizado.')
   } catch (e) {
-    error.value = e instanceof Error ? e.message : 'Erro ao atualizar imóvel'
+    toastError(e, 'Erro ao atualizar imóvel')
   }
 }
 
 async function amortize() {
-  error.value = ''
-  success.value = ''
   try {
     await api.post(`/properties/${propertyId.value}/amortizations`, {
       amount: Number(amortForm.amount),
@@ -252,27 +251,24 @@ async function amortize() {
     })
     resetAmortForm()
     await load()
-    success.value = 'Amortização registrada.'
+    toast.success('Amortização registrada.')
   } catch (e) {
-    error.value = e instanceof Error ? e.message : 'Erro na amortização'
+    toastError(e, 'Erro na amortização')
   }
 }
 
 async function removeAmortization(amortizationId: string) {
   if (!confirm('Excluir esta amortização e estornar os valores?')) return
-  error.value = ''
   try {
     await api.delete(`/properties/${propertyId.value}/amortizations/${amortizationId}`)
     await load()
-    success.value = 'Amortização removida.'
+    toast.success('Amortização removida.')
   } catch (e) {
-    error.value = e instanceof Error ? e.message : 'Erro ao excluir amortização'
+    toastError(e, 'Erro ao excluir amortização')
   }
 }
 
 async function addExpense() {
-  error.value = ''
-  success.value = ''
   try {
     await api.post(`/properties/${propertyId.value}/expenses`, {
       amount: Number(expenseForm.amount),
@@ -289,27 +285,24 @@ async function addExpense() {
       reserveId: '',
     })
     await load()
-    success.value = 'Gasto registrado.'
+    toast.success('Gasto registrado.')
   } catch (e) {
-    error.value = e instanceof Error ? e.message : 'Erro ao registrar gasto'
+    toastError(e, 'Erro ao registrar gasto')
   }
 }
 
 async function removeExpense(expenseId: string) {
   if (!confirm('Excluir este gasto?')) return
-  error.value = ''
   try {
     await api.delete(`/properties/${propertyId.value}/expenses/${expenseId}`)
     await load()
-    success.value = 'Gasto removido.'
+    toast.success('Gasto removido.')
   } catch (e) {
-    error.value = e instanceof Error ? e.message : 'Erro ao excluir gasto'
+    toastError(e, 'Erro ao excluir gasto')
   }
 }
 
 async function addRentPayment() {
-  error.value = ''
-  success.value = ''
   try {
     await api.post(`/properties/${propertyId.value}/rent-payments`, {
       amount: Number(rentForm.amount),
@@ -322,21 +315,20 @@ async function addRentPayment() {
       paidAt: new Date().toISOString().slice(0, 10),
     })
     await load()
-    success.value = 'Aluguel registrado no caixa.'
+    toast.success('Aluguel registrado no caixa.')
   } catch (e) {
-    error.value = e instanceof Error ? e.message : 'Erro ao registrar aluguel'
+    toastError(e, 'Erro ao registrar aluguel')
   }
 }
 
 async function removeRentPayment(paymentId: string) {
   if (!confirm('Excluir este pagamento de aluguel e estornar o lançamento?')) return
-  error.value = ''
   try {
     await api.delete(`/properties/${propertyId.value}/rent-payments/${paymentId}`)
     await load()
-    success.value = 'Pagamento de aluguel removido.'
+    toast.success('Pagamento de aluguel removido.')
   } catch (e) {
-    error.value = e instanceof Error ? e.message : 'Erro ao excluir pagamento de aluguel'
+    toastError(e, 'Erro ao excluir pagamento de aluguel')
   }
 }
 
@@ -376,8 +368,6 @@ watch(
       <button class="btn secondary" type="button" @click="router.push({ name: 'properties' })">Voltar</button>
     </div>
 
-    <div v-if="error" class="error">{{ error }}</div>
-    <div v-if="success" class="success">{{ success }}</div>
     <p v-if="loading" class="muted">Carregando...</p>
 
     <template v-else-if="property">
@@ -830,14 +820,6 @@ watch(
   border-radius: var(--radius-sm);
   background: rgba(255, 255, 255, 0.02);
   font-size: 0.92rem;
-}
-
-.success {
-  color: var(--success);
-  background: rgba(74, 222, 128, 0.1);
-  border: 1px solid rgba(74, 222, 128, 0.28);
-  padding: 0.75rem 1rem;
-  border-radius: var(--radius-sm);
 }
 
 @media (max-width: 1100px) {

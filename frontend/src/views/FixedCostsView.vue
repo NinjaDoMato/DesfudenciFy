@@ -7,11 +7,12 @@ import MoneyInput from '@/components/MoneyInput.vue'
 import DataTable from '@/components/DataTable.vue'
 import IconButton from '@/components/IconButton.vue'
 import type { DataTableColumn } from '@/composables/useDataTable'
+import { useToastStore } from '@/stores/toast'
 
 const router = useRouter()
+const toast = useToastStore()
 const items = ref<FixedCost[]>([])
 const reserves = ref<Reserve[]>([])
-const error = ref('')
 const showForm = ref(false)
 const form = reactive({
   name: '',
@@ -39,6 +40,10 @@ const recurrenceLabel: Record<string, string> = {
   Year: 'Anual',
 }
 
+function toastError(e: unknown, fallback: string) {
+  toast.error(e instanceof Error ? e.message : fallback)
+}
+
 async function load() {
   const [costs, res] = await Promise.all([
     api.get<FixedCost[]>('/fixed-costs'),
@@ -49,7 +54,6 @@ async function load() {
 }
 
 function openCreate() {
-  error.value = ''
   Object.assign(form, {
     name: '',
     description: '',
@@ -63,11 +67,9 @@ function openCreate() {
 
 function closeForm() {
   showForm.value = false
-  error.value = ''
 }
 
 async function save() {
-  error.value = ''
   try {
     await api.post('/fixed-costs', {
       name: form.name,
@@ -80,7 +82,7 @@ async function save() {
     closeForm()
     await load()
   } catch (e) {
-    error.value = e instanceof Error ? e.message : 'Erro'
+    toastError(e, 'Erro')
   }
 }
 
@@ -94,7 +96,7 @@ onMounted(async () => {
   try {
     await load()
   } catch (e) {
-    error.value = e instanceof Error ? e.message : 'Erro'
+    toastError(e, 'Erro')
   }
 })
 </script>
@@ -108,7 +110,6 @@ onMounted(async () => {
       </div>
       <button class="btn" type="button" @click="openCreate">Nova conta</button>
     </div>
-    <div v-if="error && !showForm" class="error">{{ error }}</div>
     <div class="panel">
       <DataTable :rows="items" :columns="columns" row-key="id" initial-sort-key="dueDate">
         <template #cell-amount="{ row }">{{ formatMoney(row.amount) }}</template>
@@ -133,7 +134,6 @@ onMounted(async () => {
     <div v-if="showForm" class="modal-backdrop" @click.self="closeForm">
       <form class="modal" @submit.prevent="save">
         <h2>Nova conta fixa</h2>
-        <div v-if="error" class="error">{{ error }}</div>
         <div class="field"><label>Nome</label><input v-model="form.name" required /></div>
         <div class="field"><label>Descrição</label><textarea v-model="form.description" rows="2" /></div>
         <div class="field"><label>Valor</label><MoneyInput v-model="form.amount" required /></div>

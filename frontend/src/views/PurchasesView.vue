@@ -6,11 +6,12 @@ import MoneyInput from '@/components/MoneyInput.vue'
 import DataTable from '@/components/DataTable.vue'
 import IconButton from '@/components/IconButton.vue'
 import type { DataTableColumn } from '@/composables/useDataTable'
+import { useToastStore } from '@/stores/toast'
 
 type PurchaseInstallment = Purchase['installments'][number]
 
+const toast = useToastStore()
 const items = ref<Purchase[]>([])
-const error = ref('')
 const showForm = ref(false)
 const form = reactive({ name: '', productUrl: '', totalAmount: 0, installmentCount: 1, firstDueDate: new Date().toISOString().slice(0, 10) })
 
@@ -22,13 +23,16 @@ const installmentColumns: DataTableColumn<PurchaseInstallment>[] = [
   { key: 'actions', label: '', sortable: false },
 ]
 
+function toastError(e: unknown, fallback: string) {
+  toast.error(e instanceof Error ? e.message : fallback)
+}
+
 async function load() {
   const { data } = await api.get<Purchase[]>('/purchases')
   items.value = data
 }
 
 async function create() {
-  error.value = ''
   try {
     await api.post('/purchases', {
       name: form.name,
@@ -40,7 +44,7 @@ async function create() {
     showForm.value = false
     await load()
   } catch (e) {
-    error.value = e instanceof Error ? e.message : 'Erro'
+    toastError(e, 'Erro')
   }
 }
 
@@ -56,7 +60,7 @@ async function remove(id: string) {
 }
 
 onMounted(async () => {
-  try { await load() } catch (e) { error.value = e instanceof Error ? e.message : 'Erro' }
+  try { await load() } catch (e) { toastError(e, 'Erro') }
 })
 </script>
 
@@ -64,9 +68,8 @@ onMounted(async () => {
   <div class="page">
     <div class="page-header">
       <div><h1>Parcelamentos</h1><p class="muted">Compras parceladas e controle de parcelas.</p></div>
-      <button class="btn" type="button" @click="error = ''; showForm = true">Novo parcelamento</button>
+      <button class="btn" type="button" @click="showForm = true">Novo parcelamento</button>
     </div>
-    <div v-if="error && !showForm" class="error">{{ error }}</div>
     <div v-for="item in items" :key="item.id" class="panel">
       <div class="page-header">
         <div>
@@ -96,10 +99,9 @@ onMounted(async () => {
         </template>
       </DataTable>
     </div>
-    <div v-if="showForm" class="modal-backdrop" @click.self="showForm = false; error = ''">
+    <div v-if="showForm" class="modal-backdrop" @click.self="showForm = false">
       <form class="modal" @submit.prevent="create">
         <h2>Novo parcelamento</h2>
-        <div v-if="error" class="error">{{ error }}</div>
         <div class="field"><label>Nome</label><input v-model="form.name" required /></div>
         <div class="field"><label>URL do produto</label><input v-model="form.productUrl" /></div>
         <div class="field"><label>Valor total</label><MoneyInput v-model="form.totalAmount" required /></div>

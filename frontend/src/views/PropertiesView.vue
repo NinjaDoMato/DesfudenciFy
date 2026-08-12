@@ -7,11 +7,11 @@ import MoneyInput from '@/components/MoneyInput.vue'
 import DataTable from '@/components/DataTable.vue'
 import IconButton from '@/components/IconButton.vue'
 import type { DataTableColumn } from '@/composables/useDataTable'
+import { useToastStore } from '@/stores/toast'
 
 const router = useRouter()
+const toast = useToastStore()
 const items = ref<Property[]>([])
-const pageError = ref('')
-const modalError = ref('')
 const showForm = ref(false)
 const photoFile = ref<File | null>(null)
 const syncRemaining = ref(true)
@@ -36,13 +36,16 @@ const columns: DataTableColumn<Property>[] = [
   { key: 'actions', label: '', sortable: false },
 ]
 
+function toastError(e: unknown, fallback: string) {
+  toast.error(e instanceof Error ? e.message : fallback)
+}
+
 async function load() {
   const { data } = await api.get<Property[]>('/properties')
   items.value = data
 }
 
 function openCreate() {
-  modalError.value = ''
   syncRemaining.value = true
   Object.assign(form, {
     name: '',
@@ -60,7 +63,6 @@ function openCreate() {
 
 function closeForm() {
   showForm.value = false
-  modalError.value = ''
   photoFile.value = null
 }
 
@@ -83,7 +85,6 @@ watch(
 )
 
 async function create() {
-  modalError.value = ''
   try {
     const { data } = await api.post<Property>('/properties', {
       name: form.name,
@@ -104,18 +105,17 @@ async function create() {
     await load()
     await router.push({ name: 'property-detail', params: { id: data.id } })
   } catch (e) {
-    modalError.value = e instanceof Error ? e.message : 'Erro ao salvar'
+    toastError(e, 'Erro ao salvar')
   }
 }
 
 async function remove(id: string) {
   if (!confirm('Excluir imóvel?')) return
-  pageError.value = ''
   try {
     await api.delete(`/properties/${id}`)
     await load()
   } catch (e) {
-    pageError.value = e instanceof Error ? e.message : 'Erro ao excluir'
+    toastError(e, 'Erro ao excluir')
   }
 }
 
@@ -123,7 +123,7 @@ onMounted(async () => {
   try {
     await load()
   } catch (e) {
-    pageError.value = e instanceof Error ? e.message : 'Erro'
+    toastError(e, 'Erro')
   }
 })
 </script>
@@ -137,7 +137,6 @@ onMounted(async () => {
       </div>
       <button class="btn" type="button" @click="openCreate">Novo imóvel</button>
     </div>
-    <div v-if="pageError" class="error">{{ pageError }}</div>
     <div class="panel">
       <DataTable :rows="items" :columns="columns" row-key="id" initial-sort-key="name">
         <template #cell-remainingBalance="{ row }">{{ formatMoney(row.remainingBalance) }}</template>
@@ -162,7 +161,6 @@ onMounted(async () => {
     <div v-if="showForm" class="modal-backdrop" @click.self="closeForm">
       <form class="modal" @submit.prevent="create">
         <h2>Novo imóvel</h2>
-        <div v-if="modalError" class="error">{{ modalError }}</div>
         <div class="field"><label>Nome</label><input v-model="form.name" required /></div>
         <div class="field"><label>Endereço</label><input v-model="form.address" required /></div>
         <div class="field">

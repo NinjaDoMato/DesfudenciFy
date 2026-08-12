@@ -7,17 +7,17 @@ import MoneyInput from '@/components/MoneyInput.vue'
 import DataTable from '@/components/DataTable.vue'
 import IconButton from '@/components/IconButton.vue'
 import type { DataTableColumn } from '@/composables/useDataTable'
+import { useToastStore } from '@/stores/toast'
 
 const route = useRoute()
 const router = useRouter()
+const toast = useToastStore()
 const reserveId = computed(() => String(route.params.id))
 
 const reserve = ref<Reserve | null>(null)
 const entries = ref<Entry[]>([])
 const investments = ref<Investment[]>([])
 const otherReserves = ref<Reserve[]>([])
-const error = ref('')
-const success = ref('')
 const loading = ref(true)
 
 const form = reactive({
@@ -55,9 +55,12 @@ const investmentColumns: DataTableColumn<Investment>[] = [
   },
 ]
 
+function toastError(e: unknown, fallback: string) {
+  toast.error(e instanceof Error ? e.message : fallback)
+}
+
 async function load() {
   loading.value = true
-  error.value = ''
   try {
     const [reserveRes, entriesRes, investmentsRes, reservesRes] = await Promise.all([
       api.get<Reserve>(`/reserves/${reserveId.value}`),
@@ -81,15 +84,13 @@ async function load() {
       monthlyGoal: reserveRes.data.monthlyGoal || 0,
     })
   } catch (e) {
-    error.value = e instanceof Error ? e.message : 'Erro ao carregar reserva'
+    toastError(e, 'Erro ao carregar reserva')
   } finally {
     loading.value = false
   }
 }
 
 async function saveReserve() {
-  error.value = ''
-  success.value = ''
   try {
     const { data } = await api.put<Reserve>(`/reserves/${reserveId.value}`, {
       name: form.name,
@@ -99,15 +100,13 @@ async function saveReserve() {
       monthlyGoal: Number(form.monthlyGoal) || null,
     })
     reserve.value = data
-    success.value = 'Reserva atualizada.'
+    toast.success('Reserva atualizada.')
   } catch (e) {
-    error.value = e instanceof Error ? e.message : 'Erro ao atualizar'
+    toastError(e, 'Erro ao atualizar')
   }
 }
 
 async function addEntry() {
-  error.value = ''
-  success.value = ''
   try {
     await api.post('/entries', {
       amount: Number(entryForm.amount),
@@ -118,20 +117,19 @@ async function addEntry() {
     entryForm.amount = 0
     entryForm.observation = ''
     await load()
-    success.value = 'Lançamento adicionado.'
+    toast.success('Lançamento adicionado.')
   } catch (e) {
-    error.value = e instanceof Error ? e.message : 'Erro ao adicionar lançamento'
+    toastError(e, 'Erro ao adicionar lançamento')
   }
 }
 
 async function removeEntry(id: string) {
   if (!confirm('Tem certeza que deseja remover este lançamento?')) return
-  error.value = ''
   try {
     await api.delete(`/entries/${id}`)
     await load()
   } catch (e) {
-    error.value = e instanceof Error ? e.message : 'Erro ao remover lançamento'
+    toastError(e, 'Erro ao remover lançamento')
   }
 }
 
@@ -141,8 +139,6 @@ function fillFullBalance() {
 }
 
 async function transfer() {
-  error.value = ''
-  success.value = ''
   try {
     await api.post('/entries/transfer', {
       amount: Number(transferForm.amount),
@@ -156,9 +152,9 @@ async function transfer() {
     transferForm.targetReserveId = ''
     transferForm.observation = ''
     await load()
-    success.value = 'Transferência realizada.'
+    toast.success('Transferência realizada.')
   } catch (e) {
-    error.value = e instanceof Error ? e.message : 'Erro na transferência'
+    toastError(e, 'Erro na transferência')
   }
 }
 
@@ -180,8 +176,6 @@ watch(reserveId, () => {
       <button class="btn secondary" type="button" @click="router.push({ name: 'reserves' })">Voltar</button>
     </div>
 
-    <div v-if="error" class="error">{{ error }}</div>
-    <div v-if="success" class="success">{{ success }}</div>
     <p v-if="loading" class="muted">Carregando...</p>
 
     <template v-else-if="reserve">
@@ -330,14 +324,6 @@ watch(reserveId, () => {
 .inline-actions :deep(.money-input) {
   flex: 1;
   min-width: 140px;
-}
-
-.success {
-  color: var(--success);
-  background: rgba(74, 222, 128, 0.1);
-  border: 1px solid rgba(74, 222, 128, 0.28);
-  padding: 0.75rem 1rem;
-  border-radius: var(--radius-sm);
 }
 
 @media (max-width: 1000px) {

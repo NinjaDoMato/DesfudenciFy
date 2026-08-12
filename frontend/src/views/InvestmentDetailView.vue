@@ -6,17 +6,17 @@ import { formatMoney, type Investment, type Reserve } from '@/types'
 import MoneyInput from '@/components/MoneyInput.vue'
 import DataTable from '@/components/DataTable.vue'
 import type { DataTableColumn } from '@/composables/useDataTable'
+import { useToastStore } from '@/stores/toast'
 
 const FREE_SOURCE = '__free__'
 
 const route = useRoute()
 const router = useRouter()
+const toast = useToastStore()
 const investmentId = computed(() => String(route.params.id))
 
 const investment = ref<Investment | null>(null)
 const reserves = ref<Reserve[]>([])
-const error = ref('')
-const success = ref('')
 const loading = ref(true)
 const currentAmount = ref(0)
 const liquidating = ref(false)
@@ -38,6 +38,10 @@ const sourceRows = computed<SourceRow[]>(() =>
 
 const isActive = computed(() => investment.value?.status === 'Active')
 
+function toastError(e: unknown, fallback: string) {
+  toast.error(e instanceof Error ? e.message : fallback)
+}
+
 function sourceLabel(reserveId: string | null) {
   if (!reserveId) return 'Saldo livre'
   return reserves.value.find((r) => r.id === reserveId)?.name || 'Reserva'
@@ -45,7 +49,6 @@ function sourceLabel(reserveId: string | null) {
 
 async function load() {
   loading.value = true
-  error.value = ''
   try {
     const [invRes, reservesRes] = await Promise.all([
       api.get<Investment>(`/investments/${investmentId.value}`),
@@ -55,7 +58,7 @@ async function load() {
     reserves.value = reservesRes.data
     currentAmount.value = invRes.data.currentAmount
   } catch (e) {
-    error.value = e instanceof Error ? e.message : 'Erro ao carregar investimento'
+    toastError(e, 'Erro ao carregar investimento')
   } finally {
     loading.value = false
   }
@@ -63,31 +66,27 @@ async function load() {
 
 async function updateAmount() {
   if (!investment.value) return
-  error.value = ''
-  success.value = ''
   try {
     await api.put(`/investments/${investment.value.id}/current-amount`, {
       currentAmount: Number(currentAmount.value),
     })
     await load()
-    success.value = 'Valor atual atualizado.'
+    toast.success('Valor atual atualizado.')
   } catch (e) {
-    error.value = e instanceof Error ? e.message : 'Erro ao atualizar valor'
+    toastError(e, 'Erro ao atualizar valor')
   }
 }
 
 async function liquidate() {
   if (!investment.value) return
   if (!confirm('Liquidar este investimento? O lucro será rateado entre as origens.')) return
-  error.value = ''
-  success.value = ''
   liquidating.value = true
   try {
     await api.post(`/investments/${investment.value.id}/liquidate`)
     await load()
-    success.value = 'Investimento liquidado.'
+    toast.success('Investimento liquidado.')
   } catch (e) {
-    error.value = e instanceof Error ? e.message : 'Erro ao liquidar'
+    toastError(e, 'Erro ao liquidar')
   } finally {
     liquidating.value = false
   }
@@ -110,8 +109,6 @@ watch(investmentId, () => {
       <button class="btn secondary" type="button" @click="router.push({ name: 'investments' })">Voltar</button>
     </div>
 
-    <div v-if="error" class="error">{{ error }}</div>
-    <div v-if="success" class="success">{{ success }}</div>
     <p v-if="loading" class="muted">Carregando...</p>
 
     <template v-else-if="investment">
@@ -248,14 +245,6 @@ watch(investmentId, () => {
 
 .amount-form .field {
   margin-bottom: 0;
-}
-
-.success {
-  color: var(--success);
-  background: rgba(74, 222, 128, 0.1);
-  border: 1px solid rgba(74, 222, 128, 0.28);
-  padding: 0.75rem 1rem;
-  border-radius: var(--radius-sm);
 }
 
 @media (max-width: 1000px) {

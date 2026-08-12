@@ -13,6 +13,7 @@ import MoneyInput from '@/components/MoneyInput.vue'
 import DataTable from '@/components/DataTable.vue'
 import IconButton from '@/components/IconButton.vue'
 import type { DataTableColumn } from '@/composables/useDataTable'
+import { useToastStore } from '@/stores/toast'
 
 interface AllocationRow {
   sourceId: string
@@ -25,6 +26,7 @@ const FREE_SOURCE = '__free__'
 
 const route = useRoute()
 const router = useRouter()
+const toast = useToastStore()
 const items = ref<Investment[]>([])
 const reserves = ref<Reserve[]>([])
 const bankAccounts = ref<BankAccount[]>([])
@@ -37,6 +39,10 @@ const filters = reactive({
   reserveId: '',
 })
 
+function toastError(e: unknown, fallback: string) {
+  toast.error(e instanceof Error ? e.message : fallback)
+}
+
 function applyRouteFilters() {
   const reserveId = route.query.reserveId
   filters.reserveId = typeof reserveId === 'string' ? reserveId : ''
@@ -46,8 +52,6 @@ watch(
   () => route.query.reserveId,
   () => applyRouteFilters(),
 )
-
-const error = ref('')
 const showForm = ref(false)
 const editingId = ref<string | null>(null)
 const showAmount = ref<Investment | null>(null)
@@ -204,13 +208,11 @@ function resetForm() {
 }
 
 function openCreate() {
-  error.value = ''
   resetForm()
   showForm.value = true
 }
 
 function openEdit(item: Investment) {
-  error.value = ''
   editingId.value = item.id
   Object.assign(form, {
     name: item.name,
@@ -233,7 +235,6 @@ function openEdit(item: Investment) {
 
 function closeForm() {
   showForm.value = false
-  error.value = ''
   resetForm()
 }
 
@@ -263,26 +264,26 @@ function buildSourceReserves() {
 
 function validateAllocations(sourceReserves: { reserveId: string | null; amount: number }[]) {
   if (sourceReserves.length === 0) {
-    error.value = 'Informe ao menos uma origem com valor (saldo livre ou reserva).'
+    toast.error('Informe ao menos uma origem com valor (saldo livre ou reserva).')
     return false
   }
 
   const freeCount = sourceReserves.filter((s) => !s.reserveId).length
   if (freeCount > 1) {
-    error.value = 'Saldo livre só pode aparecer uma vez.'
+    toast.error('Saldo livre só pode aparecer uma vez.')
     return false
   }
 
   const reserveIds = sourceReserves.map((s) => s.reserveId).filter((id): id is string => !!id)
   if (new Set(reserveIds).size !== reserveIds.length) {
-    error.value = 'Cada reserva só pode aparecer uma vez.'
+    toast.error('Cada reserva só pode aparecer uma vez.')
     return false
   }
 
   for (const source of sourceReserves) {
     const sourceId = sourceIdFromAllocation(source.reserveId)
     if (source.amount > editableAvailable(sourceId)) {
-      error.value = `Saldo insuficiente em ${sourceLabel(source.reserveId)}.`
+      toast.error(`Saldo insuficiente em ${sourceLabel(source.reserveId)}.`)
       return false
     }
   }
@@ -309,7 +310,6 @@ const activeBankAccounts = computed(() => bankAccounts.value.filter((x) => x.isA
 const activeTypes = computed(() => types.value.filter((x) => x.isActive))
 
 async function save() {
-  error.value = ''
   const sourceReserves = buildSourceReserves()
   if (!validateAllocations(sourceReserves)) return
 
@@ -332,13 +332,12 @@ async function save() {
     closeForm()
     await load()
   } catch (e) {
-    error.value = e instanceof Error ? e.message : 'Erro'
+    toastError(e, 'Erro')
   }
 }
 
 async function updateAmount() {
   if (!showAmount.value) return
-  error.value = ''
   try {
     await api.put(`/investments/${showAmount.value.id}/current-amount`, {
       currentAmount: Number(currentAmount.value),
@@ -346,25 +345,23 @@ async function updateAmount() {
     showAmount.value = null
     await load()
   } catch (e) {
-    error.value = e instanceof Error ? e.message : 'Erro'
+    toastError(e, 'Erro')
   }
 }
 
 function openLiquidation(item: Investment) {
-  error.value = ''
   showLiquidation.value = item
 }
 
 async function confirmLiquidation() {
   if (!showLiquidation.value) return
   liquidating.value = true
-  error.value = ''
   try {
     await api.post(`/investments/${showLiquidation.value.id}/liquidate`)
     showLiquidation.value = null
     await load()
   } catch (e) {
-    error.value = e instanceof Error ? e.message : 'Erro ao liquidar'
+    toastError(e, 'Erro ao liquidar')
   } finally {
     liquidating.value = false
   }
@@ -375,7 +372,7 @@ onMounted(async () => {
   try {
     await load()
   } catch (e) {
-    error.value = e instanceof Error ? e.message : 'Erro'
+    toastError(e, 'Erro')
   }
 })
 </script>
@@ -389,7 +386,6 @@ onMounted(async () => {
       </div>
       <button class="btn" type="button" @click="openCreate">Novo investimento</button>
     </div>
-    <div v-if="error && !showForm && !showAmount && !showLiquidation" class="error">{{ error }}</div>
     <div class="panel">
       <div class="filters">
         <div class="field">
@@ -453,7 +449,6 @@ onMounted(async () => {
     <div v-if="showForm" class="modal-backdrop" @click.self="closeForm">
       <form class="modal wide" @submit.prevent="save">
         <h2>{{ editingId ? 'Editar' : 'Novo' }} investimento</h2>
-        <div v-if="error" class="error">{{ error }}</div>
         <div class="field"><label>Nome</label><input v-model="form.name" required /></div>
         <div class="field">
           <label>Rentabilidade</label>
@@ -529,10 +524,9 @@ onMounted(async () => {
       </form>
     </div>
 
-    <div v-if="showAmount" class="modal-backdrop" @click.self="showAmount = null; error = ''">
+    <div v-if="showAmount" class="modal-backdrop" @click.self="showAmount = null">
       <form class="modal" @submit.prevent="updateAmount">
         <h2>Atualizar valor atual</h2>
-        <div v-if="error" class="error">{{ error }}</div>
         <div class="field"><label>Valor atual</label><MoneyInput v-model="currentAmount" required /></div>
         <div class="actions">
           <button class="btn" type="submit">Salvar</button>
@@ -566,7 +560,6 @@ onMounted(async () => {
       <div class="modal wide">
         <h2>Resumo da liquidação</h2>
         <p class="muted">O principal volta ao disponível das origens; o lucro é lançado proporcionalmente (saldo livre ou reserva).</p>
-        <div v-if="error" class="error">{{ error }}</div>
 
         <div class="summary-grid">
           <div class="kpi">

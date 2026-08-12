@@ -5,9 +5,10 @@ import type { UserDto } from '@/types'
 import DataTable from '@/components/DataTable.vue'
 import IconButton from '@/components/IconButton.vue'
 import type { DataTableColumn } from '@/composables/useDataTable'
+import { useToastStore } from '@/stores/toast'
 
+const toast = useToastStore()
 const items = ref<UserDto[]>([])
-const error = ref('')
 const showForm = ref(false)
 const editingId = ref<string | null>(null)
 const form = reactive({ email: '', fullName: '', password: '', role: 'User', isActive: true })
@@ -19,6 +20,10 @@ const columns: DataTableColumn<UserDto>[] = [
   { key: 'isActive', label: 'Ativo', sortValue: (row) => (row.isActive ? 1 : 0) },
   { key: 'actions', label: '', sortable: false },
 ]
+
+function toastError(e: unknown, fallback: string) {
+  toast.error(e instanceof Error ? e.message : fallback)
+}
 
 async function load() {
   const { data } = await api.get<UserDto[]>('/admin/users')
@@ -38,7 +43,6 @@ function openEdit(item: UserDto) {
 }
 
 async function save() {
-  error.value = ''
   try {
     if (editingId.value) {
       await api.put(`/admin/users/${editingId.value}`, {
@@ -59,7 +63,7 @@ async function save() {
     showForm.value = false
     await load()
   } catch (e) {
-    error.value = e instanceof Error ? e.message : 'Erro'
+    toastError(e, 'Erro')
   }
 }
 
@@ -70,7 +74,7 @@ async function remove(id: string) {
 }
 
 onMounted(async () => {
-  try { await load() } catch (e) { error.value = e instanceof Error ? e.message : 'Erro' }
+  try { await load() } catch (e) { toastError(e, 'Erro') }
 })
 </script>
 
@@ -80,7 +84,6 @@ onMounted(async () => {
       <div><h1>Usuários</h1><p class="muted">Cadastro e permissões (Admin / User).</p></div>
       <button class="btn" type="button" @click="openCreate">Novo usuário</button>
     </div>
-    <div v-if="error && !showForm" class="error">{{ error }}</div>
     <div class="panel">
       <DataTable :rows="items" :columns="columns" row-key="id" initial-sort-key="fullName">
         <template #cell-role="{ row }"><span class="badge">{{ row.role }}</span></template>
@@ -93,10 +96,9 @@ onMounted(async () => {
         </template>
       </DataTable>
     </div>
-    <div v-if="showForm" class="modal-backdrop" @click.self="showForm = false; error = ''">
+    <div v-if="showForm" class="modal-backdrop" @click.self="showForm = false">
       <form class="modal" @submit.prevent="save">
         <h2>{{ editingId ? 'Editar' : 'Novo' }} usuário</h2>
-        <div v-if="error" class="error">{{ error }}</div>
         <div class="field"><label>Nome</label><input v-model="form.fullName" required /></div>
         <div class="field"><label>Email</label><input v-model="form.email" type="email" required /></div>
         <div class="field"><label>Senha {{ editingId ? '(opcional)' : '' }}</label><input v-model="form.password" type="password" :required="!editingId" /></div>

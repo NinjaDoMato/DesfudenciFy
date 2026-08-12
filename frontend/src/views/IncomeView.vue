@@ -6,10 +6,11 @@ import MoneyInput from '@/components/MoneyInput.vue'
 import DataTable from '@/components/DataTable.vue'
 import IconButton from '@/components/IconButton.vue'
 import type { DataTableColumn } from '@/composables/useDataTable'
+import { useToastStore } from '@/stores/toast'
 
+const toast = useToastStore()
 const items = ref<IncomeSource[]>([])
 const incomeTypes = ref<IncomeType[]>([])
-const error = ref('')
 const showForm = ref(false)
 const editingId = ref<string | null>(null)
 const form = reactive({ name: '', amount: 0, description: '', isActive: true, incomeTypeId: '' })
@@ -21,6 +22,10 @@ const columns: DataTableColumn<IncomeSource>[] = [
   { key: 'description', label: 'Descrição', sortValue: (row) => row.description },
   { key: 'actions', label: '', sortable: false },
 ]
+
+function toastError(e: unknown, fallback: string) {
+  toast.error(e instanceof Error ? e.message : fallback)
+}
 
 async function load() {
   const [sourcesRes, typesRes] = await Promise.all([
@@ -56,7 +61,6 @@ function openEdit(item: IncomeSource) {
 }
 
 async function save() {
-  error.value = ''
   try {
     const payload = {
       name: form.name,
@@ -70,7 +74,7 @@ async function save() {
     showForm.value = false
     await load()
   } catch (e) {
-    error.value = e instanceof Error ? e.message : 'Erro'
+    toastError(e, 'Erro')
   }
 }
 
@@ -81,7 +85,7 @@ async function remove(id: string) {
 }
 
 onMounted(async () => {
-  try { await load() } catch (e) { error.value = e instanceof Error ? e.message : 'Erro' }
+  try { await load() } catch (e) { toastError(e, 'Erro') }
 })
 </script>
 
@@ -91,7 +95,6 @@ onMounted(async () => {
       <div><h1>Entradas</h1><p class="muted">Fontes de renda recorrentes (salário, etc.).</p></div>
       <button class="btn" type="button" @click="openCreate">Nova entrada</button>
     </div>
-    <div v-if="error && !showForm" class="error">{{ error }}</div>
     <div class="panel">
       <DataTable :rows="items" :columns="columns" row-key="id" initial-sort-key="name">
         <template #cell-amount="{ row }">{{ formatMoney(row.amount) }}</template>
@@ -103,10 +106,9 @@ onMounted(async () => {
         </template>
       </DataTable>
     </div>
-    <div v-if="showForm" class="modal-backdrop" @click.self="showForm = false; error = ''">
+    <div v-if="showForm" class="modal-backdrop" @click.self="showForm = false">
       <form class="modal" @submit.prevent="save">
         <h2>{{ editingId ? 'Editar' : 'Nova' }} entrada</h2>
-        <div v-if="error" class="error">{{ error }}</div>
         <div class="field"><label>Nome</label><input v-model="form.name" required /></div>
         <div class="field">
           <label>Tipo</label>

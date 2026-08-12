@@ -6,11 +6,12 @@ import MoneyInput from '@/components/MoneyInput.vue'
 import DataTable from '@/components/DataTable.vue'
 import IconButton from '@/components/IconButton.vue'
 import type { DataTableColumn } from '@/composables/useDataTable'
+import { useToastStore } from '@/stores/toast'
 
+const toast = useToastStore()
 const items = ref<Entry[]>([])
 const reserves = ref<Reserve[]>([])
 const freeBalance = ref(0)
-const error = ref('')
 const showEntry = ref(false)
 const showTransfer = ref(false)
 
@@ -42,6 +43,10 @@ const columns: DataTableColumn<Entry>[] = [
   { key: 'actions', label: '', sortable: false },
 ]
 
+function toastError(e: unknown, fallback: string) {
+  toast.error(e instanceof Error ? e.message : fallback)
+}
+
 async function load() {
   const [entries, reservesRes, free] = await Promise.all([
     api.get<Entry[]>('/entries'),
@@ -54,7 +59,6 @@ async function load() {
 }
 
 async function createEntry() {
-  error.value = ''
   try {
     await api.post('/entries', {
       amount: Number(entryForm.amount),
@@ -65,12 +69,11 @@ async function createEntry() {
     showEntry.value = false
     await load()
   } catch (e) {
-    error.value = e instanceof Error ? e.message : 'Erro'
+    toastError(e, 'Erro')
   }
 }
 
 async function transfer() {
-  error.value = ''
   try {
     await api.post('/entries/transfer', {
       amount: Number(transferForm.amount),
@@ -83,7 +86,7 @@ async function transfer() {
     showTransfer.value = false
     await load()
   } catch (e) {
-    error.value = e instanceof Error ? e.message : 'Erro'
+    toastError(e, 'Erro')
   }
 }
 
@@ -94,7 +97,7 @@ async function remove(id: string) {
 }
 
 onMounted(async () => {
-  try { await load() } catch (e) { error.value = e instanceof Error ? e.message : 'Erro' }
+  try { await load() } catch (e) { toastError(e, 'Erro') }
 })
 </script>
 
@@ -110,7 +113,6 @@ onMounted(async () => {
         <button class="btn secondary" type="button" @click="showTransfer = true">Transferir</button>
       </div>
     </div>
-    <div v-if="error && !showEntry && !showTransfer" class="error">{{ error }}</div>
     <div class="panel">
       <DataTable :rows="items" :columns="columns" row-key="id" initial-sort-key="occurredAt">
         <template #cell-occurredAt="{ row }">{{ new Date(row.occurredAt).toLocaleString('pt-BR') }}</template>
@@ -126,10 +128,9 @@ onMounted(async () => {
       </DataTable>
     </div>
 
-    <div v-if="showEntry" class="modal-backdrop" @click.self="showEntry = false; error = ''">
+    <div v-if="showEntry" class="modal-backdrop" @click.self="showEntry = false">
       <form class="modal" @submit.prevent="createEntry">
         <h2>Novo lançamento</h2>
-        <div v-if="error" class="error">{{ error }}</div>
         <div class="field"><label>Valor</label><MoneyInput v-model="entryForm.amount" allow-negative required /></div>
         <div class="field"><label>Observação</label><input v-model="entryForm.observation" /></div>
         <div class="field">
@@ -153,10 +154,9 @@ onMounted(async () => {
       </form>
     </div>
 
-    <div v-if="showTransfer" class="modal-backdrop" @click.self="showTransfer = false; error = ''">
+    <div v-if="showTransfer" class="modal-backdrop" @click.self="showTransfer = false">
       <form class="modal" @submit.prevent="transfer">
         <h2>Transferência</h2>
-        <div v-if="error" class="error">{{ error }}</div>
         <div class="field"><label>Valor</label><MoneyInput v-model="transferForm.amount" required /></div>
         <div class="field"><label>Observação</label><input v-model="transferForm.observation" /></div>
         <div class="field">
