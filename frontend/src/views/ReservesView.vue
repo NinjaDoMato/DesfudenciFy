@@ -96,7 +96,7 @@ onMounted(async () => {
     <div class="page-header">
       <div>
         <h1>Reservas</h1>
-        <p class="muted">Metas e capital alocado, sem donos.</p>
+        <p class="muted">Metas e capital alocado.</p>
       </div>
       <button class="btn" type="button" @click="openCreate">Nova reserva</button>
     </div>
