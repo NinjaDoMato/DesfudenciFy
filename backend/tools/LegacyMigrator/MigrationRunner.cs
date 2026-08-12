@@ -150,6 +150,8 @@ internal sealed class MigrationRunner
             """
             TRUNCATE TABLE
                 "PropertyAmortizations",
+                "PropertyExpenses",
+                "PropertyRentPayments",
                 "CostPayments",
                 "PurchaseInstallments",
                 "ReserveInvestments",
@@ -162,6 +164,7 @@ internal sealed class MigrationRunner
                 "Properties",
                 "BankAccounts",
                 "InvestmentTypes",
+                "IncomeTypes",
                 "Users"
             RESTART IDENTITY CASCADE;
             """,
@@ -222,6 +225,21 @@ internal sealed class MigrationRunner
                 LastUpdate = null
             });
         }
+
+        foreach (var seedName in new[] { "Salário", "Vale Refeição", "Vale Alimentação", "Aluguel", "Renda extra" })
+        {
+            plan.IncomeTypes.Add(new IncomeType
+            {
+                Id = LegacyMappings.StableGuid("IncomeType:" + seedName),
+                Name = seedName,
+                Description = "Tipo padrão (seed do migrator).",
+                IsActive = true,
+                DateCreated = DateTime.UtcNow,
+                LastUpdate = null
+            });
+        }
+
+        plan.DefaultIncomeTypeId = plan.IncomeTypes.First(t => t.Name == "Renda extra").Id;
 
         var bankIdByLegacyAccount = accountIdsUsed.ToDictionary(
             account => account,
@@ -446,6 +464,7 @@ internal sealed class MigrationRunner
                 Amount = income.Amount,
                 Description = LegacyMappings.Truncate(income.Description, 500),
                 IsActive = income.IsActive,
+                IncomeTypeId = plan.DefaultIncomeTypeId,
                 DateCreated = income.DateCreated,
                 LastUpdate = income.LastUpdate
             });
@@ -524,6 +543,7 @@ internal sealed class MigrationRunner
         db.Users.AddRange(plan.Users);
         db.BankAccounts.AddRange(plan.BankAccounts);
         db.InvestmentTypes.AddRange(plan.InvestmentTypes);
+        db.IncomeTypes.AddRange(plan.IncomeTypes);
         db.Reserves.AddRange(plan.Reserves);
         await db.SaveChangesAsync(cancellationToken);
 
@@ -603,6 +623,7 @@ internal sealed class MigrationRunner
 
         Console.WriteLine($"  BankAccounts       : {plan.BankAccounts.Count}");
         Console.WriteLine($"  InvestmentTypes    : {plan.InvestmentTypes.Count}");
+        Console.WriteLine($"  IncomeTypes        : {plan.IncomeTypes.Count}");
         Console.WriteLine($"  Reserves           : {plan.Reserves.Count}");
         Console.WriteLine($"  Entries            : {plan.Entries.Count}");
         Console.WriteLine($"  Investments        : {plan.Investments.Count}");
@@ -637,6 +658,8 @@ internal sealed class MigrationRunner
         public List<User> Users { get; } = [];
         public List<BankAccount> BankAccounts { get; } = [];
         public List<InvestmentType> InvestmentTypes { get; } = [];
+        public List<IncomeType> IncomeTypes { get; } = [];
+        public Guid DefaultIncomeTypeId { get; set; }
         public List<Reserve> Reserves { get; } = [];
         public List<Entry> Entries { get; } = [];
         public List<Investment> Investments { get; } = [];

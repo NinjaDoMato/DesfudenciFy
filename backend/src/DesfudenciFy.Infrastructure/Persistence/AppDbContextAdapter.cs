@@ -16,12 +16,15 @@ public class AppDbContextAdapter : IAppDbContext
     public IQueryable<User> Users => _db.Users;
     public IQueryable<BankAccount> BankAccounts => _db.BankAccounts;
     public IQueryable<InvestmentType> InvestmentTypes => _db.InvestmentTypes;
+    public IQueryable<IncomeType> IncomeTypes => _db.IncomeTypes;
     public IQueryable<Reserve> Reserves => _db.Reserves;
     public IQueryable<Entry> Entries => _db.Entries;
     public IQueryable<Investment> Investments => _db.Investments;
     public IQueryable<ReserveInvestment> ReserveInvestments => _db.ReserveInvestments;
     public IQueryable<Property> Properties => _db.Properties;
     public IQueryable<PropertyAmortization> PropertyAmortizations => _db.PropertyAmortizations;
+    public IQueryable<PropertyExpense> PropertyExpenses => _db.PropertyExpenses;
+    public IQueryable<PropertyRentPayment> PropertyRentPayments => _db.PropertyRentPayments;
     public IQueryable<FixedCost> FixedCosts => _db.FixedCosts;
     public IQueryable<CostPayment> CostPayments => _db.CostPayments;
     public IQueryable<IncomeSource> IncomeSources => _db.IncomeSources;

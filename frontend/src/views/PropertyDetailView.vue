@@ -9,6 +9,8 @@ import IconButton from '@/components/IconButton.vue'
 import type { DataTableColumn } from '@/composables/useDataTable'
 
 type PropertyAmortization = Property['amortizations'][number]
+type PropertyExpense = Property['expenses'][number]
+type PropertyRentPayment = Property['rentPayments'][number]
 
 const route = useRoute()
 const router = useRouter()
@@ -27,6 +29,8 @@ const form = reactive({
   name: '',
   address: '',
   isRented: false,
+  appraisedValue: 0,
+  rentalAmount: 0,
   initialFinancingAmount: 0,
   installmentAmount: 0,
   remainingInstallments: 0,
@@ -43,10 +47,38 @@ const amortForm = reactive({
   syncAmountFromInstallments: true,
 })
 
+const expenseForm = reactive({
+  amount: 0,
+  observation: '',
+  debitCash: false,
+  cashDestination: 'FreeBalance' as EntryDestination,
+  reserveId: '',
+})
+
+const rentForm = reactive({
+  amount: 0,
+  observation: '',
+  paidAt: new Date().toISOString().slice(0, 10),
+})
+
 const amortizationColumns: DataTableColumn<PropertyAmortization>[] = [
   { key: 'paidAt', label: 'Data', sortValue: (row) => new Date(row.paidAt) },
   { key: 'amount', label: 'Valor', sortValue: (row) => row.amount },
   { key: 'installmentsAmortized', label: 'Parcelas', sortValue: (row) => row.installmentsAmortized },
+  { key: 'observation', label: 'Obs.', sortValue: (row) => row.observation || '' },
+  { key: 'actions', label: '', sortable: false },
+]
+
+const expenseColumns: DataTableColumn<PropertyExpense>[] = [
+  { key: 'occurredAt', label: 'Data', sortValue: (row) => new Date(row.occurredAt) },
+  { key: 'amount', label: 'Valor', sortValue: (row) => row.amount },
+  { key: 'observation', label: 'Obs.', sortValue: (row) => row.observation },
+  { key: 'actions', label: '', sortable: false },
+]
+
+const rentColumns: DataTableColumn<PropertyRentPayment>[] = [
+  { key: 'paidAt', label: 'Data', sortValue: (row) => new Date(row.paidAt) },
+  { key: 'amount', label: 'Valor', sortValue: (row) => row.amount },
   { key: 'observation', label: 'Obs.', sortValue: (row) => row.observation || '' },
   { key: 'actions', label: '', sortable: false },
 ]
@@ -60,6 +92,20 @@ const projectedRemainingInstallments = computed(() => {
   if (!property.value) return 0
   return Math.max(0, property.value.remainingInstallments - Number(amortForm.installmentsAmortized || 0))
 })
+
+function syncFormFromProperty(item: Property) {
+  Object.assign(form, {
+    name: item.name,
+    address: item.address,
+    isRented: item.isRented,
+    appraisedValue: item.appraisedValue,
+    rentalAmount: item.rentalAmount,
+    initialFinancingAmount: item.initialFinancingAmount,
+    installmentAmount: item.installmentAmount,
+    remainingInstallments: item.remainingInstallments,
+    remainingBalance: item.remainingBalance,
+  })
+}
 
 function syncRemainingBalanceFromInstallments() {
   const installment = Number(form.installmentAmount) || 0
@@ -119,15 +165,10 @@ async function load() {
     ])
     property.value = propertyRes.data
     reserves.value = reservesRes.data
-    Object.assign(form, {
-      name: propertyRes.data.name,
-      address: propertyRes.data.address,
-      isRented: propertyRes.data.isRented,
-      initialFinancingAmount: propertyRes.data.initialFinancingAmount,
-      installmentAmount: propertyRes.data.installmentAmount,
-      remainingInstallments: propertyRes.data.remainingInstallments,
-      remainingBalance: propertyRes.data.remainingBalance,
-    })
+    syncFormFromProperty(propertyRes.data)
+    if (propertyRes.data.isRented && !Number(rentForm.amount)) {
+      rentForm.amount = propertyRes.data.rentalAmount
+    }
   } catch (e) {
     error.value = e instanceof Error ? e.message : 'Erro ao carregar imóvel'
   } finally {
@@ -143,6 +184,8 @@ async function save() {
       name: form.name,
       address: form.address,
       isRented: form.isRented,
+      appraisedValue: Number(form.appraisedValue),
+      rentalAmount: Number(form.rentalAmount),
       initialFinancingAmount: Number(form.initialFinancingAmount),
       installmentAmount: Number(form.installmentAmount),
       remainingInstallments: Number(form.remainingInstallments),
@@ -163,15 +206,7 @@ async function save() {
       property.value = data
     }
 
-    Object.assign(form, {
-      name: property.value.name,
-      address: property.value.address,
-      isRented: property.value.isRented,
-      initialFinancingAmount: property.value.initialFinancingAmount,
-      installmentAmount: property.value.installmentAmount,
-      remainingInstallments: property.value.remainingInstallments,
-      remainingBalance: property.value.remainingBalance,
-    })
+    syncFormFromProperty(property.value)
     success.value = 'Imóvel atualizado.'
   } catch (e) {
     error.value = e instanceof Error ? e.message : 'Erro ao atualizar imóvel'
@@ -219,6 +254,76 @@ async function removeAmortization(amortizationId: string) {
   }
 }
 
+async function addExpense() {
+  error.value = ''
+  success.value = ''
+  try {
+    await api.post(`/properties/${propertyId.value}/expenses`, {
+      amount: Number(expenseForm.amount),
+      observation: expenseForm.observation,
+      debitCash: expenseForm.debitCash,
+      cashDestination: expenseForm.debitCash ? expenseForm.cashDestination : null,
+      reserveId: expenseForm.debitCash && expenseForm.cashDestination === 'Reserve' ? expenseForm.reserveId : null,
+    })
+    Object.assign(expenseForm, {
+      amount: 0,
+      observation: '',
+      debitCash: false,
+      cashDestination: 'FreeBalance',
+      reserveId: '',
+    })
+    await load()
+    success.value = 'Gasto registrado.'
+  } catch (e) {
+    error.value = e instanceof Error ? e.message : 'Erro ao registrar gasto'
+  }
+}
+
+async function removeExpense(expenseId: string) {
+  if (!confirm('Excluir este gasto?')) return
+  error.value = ''
+  try {
+    await api.delete(`/properties/${propertyId.value}/expenses/${expenseId}`)
+    await load()
+    success.value = 'Gasto removido.'
+  } catch (e) {
+    error.value = e instanceof Error ? e.message : 'Erro ao excluir gasto'
+  }
+}
+
+async function addRentPayment() {
+  error.value = ''
+  success.value = ''
+  try {
+    await api.post(`/properties/${propertyId.value}/rent-payments`, {
+      amount: Number(rentForm.amount),
+      observation: rentForm.observation || null,
+      paidAt: rentForm.paidAt ? new Date(`${rentForm.paidAt}T12:00:00`).toISOString() : null,
+    })
+    Object.assign(rentForm, {
+      amount: property.value?.rentalAmount ?? 0,
+      observation: '',
+      paidAt: new Date().toISOString().slice(0, 10),
+    })
+    await load()
+    success.value = 'Aluguel registrado no caixa.'
+  } catch (e) {
+    error.value = e instanceof Error ? e.message : 'Erro ao registrar aluguel'
+  }
+}
+
+async function removeRentPayment(paymentId: string) {
+  if (!confirm('Excluir este pagamento de aluguel e estornar o lançamento?')) return
+  error.value = ''
+  try {
+    await api.delete(`/properties/${propertyId.value}/rent-payments/${paymentId}`)
+    await load()
+    success.value = 'Pagamento de aluguel removido.'
+  } catch (e) {
+    error.value = e instanceof Error ? e.message : 'Erro ao excluir pagamento de aluguel'
+  }
+}
+
 onMounted(load)
 
 watch(propertyId, () => {
@@ -257,7 +362,7 @@ watch(
       <div>
         <p class="eyebrow">Gerenciar</p>
         <h1>{{ property?.name || 'Imóvel' }}</h1>
-        <p class="muted">Dados do imóvel, financiamento, foto e amortizações.</p>
+        <p class="muted">Dados do imóvel, custos, aluguéis, financiamento e amortizações.</p>
       </div>
       <button class="btn secondary" type="button" @click="router.push({ name: 'properties' })">Voltar</button>
     </div>
@@ -272,8 +377,11 @@ watch(
           <h2>Dados do imóvel</h2>
           <div class="field"><label>Nome</label><input v-model="form.name" required /></div>
           <div class="field"><label>Endereço</label><input v-model="form.address" required /></div>
+          <div class="field"><label>Valor avaliado</label><MoneyInput v-model="form.appraisedValue" /></div>
+          <div class="field"><label>Valor do aluguel</label><MoneyInput v-model="form.rentalAmount" /></div>
           <div class="field">
             <label><input v-model="form.isRented" type="checkbox" /> Alugado</label>
+            <span class="muted hint">Ao marcar como alugado, uma entrada do tipo Aluguel é criada/atualizada.</span>
           </div>
           <div class="field">
             <label>Foto</label>
@@ -303,16 +411,95 @@ watch(
 
         <div class="side-stack">
           <div class="panel">
-            <h2>Resumo</h2>
+            <h2>Totalizadores</h2>
             <div class="kpi-row">
+              <div class="kpi"><div class="label">Custo do imóvel</div><div class="value">{{ formatMoney(property.propertyCost) }}</div></div>
+              <div class="kpi"><div class="label">Retorno</div><div class="value">{{ formatMoney(property.propertyReturn) }}</div></div>
+              <div class="kpi"><div class="label">Total de gastos</div><div class="value">{{ formatMoney(property.totalExpenses) }}</div></div>
+              <div class="kpi"><div class="label">Aluguéis pagos</div><div class="value">{{ formatMoney(property.totalRentPaid) }}</div></div>
+              <div class="kpi"><div class="label">Valor avaliado</div><div class="value">{{ formatMoney(property.appraisedValue) }}</div></div>
               <div class="kpi"><div class="label">Financiamento inicial</div><div class="value">{{ formatMoney(property.initialFinancingAmount) }}</div></div>
               <div class="kpi"><div class="label">Parcela</div><div class="value">{{ formatMoney(property.installmentAmount) }}</div></div>
               <div class="kpi"><div class="label">Restante</div><div class="value">{{ formatMoney(property.remainingBalance) }}</div></div>
-              <div class="kpi"><div class="label">Parcelas restantes</div><div class="value">{{ property.remainingInstallments }}</div></div>
             </div>
             <div class="actions">
               <button class="btn" type="button" @click="openAmortization">Amortizar</button>
             </div>
+          </div>
+
+          <div class="panel">
+            <h2>Registrar gasto</h2>
+            <form class="inline-form" @submit.prevent="addExpense">
+              <div class="field"><label>Valor</label><MoneyInput v-model="expenseForm.amount" required /></div>
+              <div class="field"><label>Observação</label><input v-model="expenseForm.observation" required placeholder="Ex.: Contratado eletricista" /></div>
+              <div class="field">
+                <label><input v-model="expenseForm.debitCash" type="checkbox" /> Debitar do caixa</label>
+              </div>
+              <template v-if="expenseForm.debitCash">
+                <div class="field">
+                  <label>Origem do débito</label>
+                  <select v-model="expenseForm.cashDestination">
+                    <option value="FreeBalance">Saldo livre</option>
+                    <option value="Reserve">Reserva</option>
+                  </select>
+                </div>
+                <div v-if="expenseForm.cashDestination === 'Reserve'" class="field">
+                  <label>Reserva</label>
+                  <select v-model="expenseForm.reserveId" required>
+                    <option disabled value="">Selecione</option>
+                    <option v-for="r in reserves" :key="r.id" :value="r.id">{{ r.name }}</option>
+                  </select>
+                </div>
+              </template>
+              <button class="btn" type="submit">Adicionar gasto</button>
+            </form>
+          </div>
+
+          <div class="panel">
+            <h2>Gastos do imóvel</h2>
+            <DataTable
+              :rows="property.expenses"
+              :columns="expenseColumns"
+              row-key="id"
+              :paginated="false"
+              initial-sort-key="occurredAt"
+              empty-text="Nenhum gasto registrado."
+            >
+              <template #cell-occurredAt="{ row }">{{ new Date(row.occurredAt).toLocaleDateString('pt-BR') }}</template>
+              <template #cell-amount="{ row }">{{ formatMoney(row.amount) }}</template>
+              <template #cell-actions="{ row }">
+                <IconButton label="Excluir" icon="delete" variant="danger" @click="removeExpense(row.id)" />
+              </template>
+            </DataTable>
+          </div>
+
+          <div class="panel">
+            <h2>Registrar aluguel</h2>
+            <form class="inline-form" @submit.prevent="addRentPayment">
+              <div class="field"><label>Valor</label><MoneyInput v-model="rentForm.amount" required /></div>
+              <div class="field"><label>Data</label><input v-model="rentForm.paidAt" type="date" required /></div>
+              <div class="field"><label>Observação</label><input v-model="rentForm.observation" placeholder="Opcional" /></div>
+              <button class="btn" type="submit">Registrar pagamento</button>
+            </form>
+          </div>
+
+          <div class="panel">
+            <h2>Pagamentos de aluguel</h2>
+            <DataTable
+              :rows="property.rentPayments"
+              :columns="rentColumns"
+              row-key="id"
+              :paginated="false"
+              initial-sort-key="paidAt"
+              empty-text="Nenhum aluguel registrado."
+            >
+              <template #cell-paidAt="{ row }">{{ new Date(row.paidAt).toLocaleDateString('pt-BR') }}</template>
+              <template #cell-amount="{ row }">{{ formatMoney(row.amount) }}</template>
+              <template #cell-observation="{ row }">{{ row.observation || '-' }}</template>
+              <template #cell-actions="{ row }">
+                <IconButton label="Excluir" icon="delete" variant="danger" @click="removeRentPayment(row.id)" />
+              </template>
+            </DataTable>
           </div>
 
           <div class="panel">
@@ -423,6 +610,12 @@ watch(
   display: block;
   margin-top: 0.35rem;
   font-size: 0.82rem;
+}
+
+.inline-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
 }
 
 .projection {

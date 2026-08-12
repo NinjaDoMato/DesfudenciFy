@@ -24,6 +24,7 @@ const router = createRouter({
         { path: 'admin/users', name: 'admin-users', component: () => import('@/views/admin/UsersView.vue'), meta: { admin: true } },
         { path: 'admin/bank-accounts', name: 'admin-bank-accounts', component: () => import('@/views/admin/BankAccountsView.vue'), meta: { admin: true } },
         { path: 'admin/investment-types', name: 'admin-investment-types', component: () => import('@/views/admin/InvestmentTypesView.vue'), meta: { admin: true } },
+        { path: 'admin/income-types', name: 'admin-income-types', component: () => import('@/views/admin/IncomeTypesView.vue'), meta: { admin: true } },
       ],
     },
   ],

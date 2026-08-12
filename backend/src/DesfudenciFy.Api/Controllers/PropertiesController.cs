@@ -61,4 +61,26 @@ public class PropertiesController : ControllerBase
         await _service.DeleteAmortizationAsync(id, amortizationId, cancellationToken);
         return NoContent();
     }
+
+    [HttpPost("{id:guid}/expenses")]
+    public Task<PropertyExpenseDto> AddExpense(Guid id, [FromBody] CreatePropertyExpenseRequest request, CancellationToken cancellationToken) =>
+        _service.AddExpenseAsync(id, request, cancellationToken);
+
+    [HttpDelete("{id:guid}/expenses/{expenseId:guid}")]
+    public async Task<IActionResult> DeleteExpense(Guid id, Guid expenseId, CancellationToken cancellationToken)
+    {
+        await _service.DeleteExpenseAsync(id, expenseId, cancellationToken);
+        return NoContent();
+    }
+
+    [HttpPost("{id:guid}/rent-payments")]
+    public Task<PropertyRentPaymentDto> AddRentPayment(Guid id, [FromBody] CreatePropertyRentPaymentRequest request, CancellationToken cancellationToken) =>
+        _service.AddRentPaymentAsync(id, request, cancellationToken);
+
+    [HttpDelete("{id:guid}/rent-payments/{paymentId:guid}")]
+    public async Task<IActionResult> DeleteRentPayment(Guid id, Guid paymentId, CancellationToken cancellationToken)
+    {
+        await _service.DeleteRentPaymentAsync(id, paymentId, cancellationToken);
+        return NoContent();
+    }
 }

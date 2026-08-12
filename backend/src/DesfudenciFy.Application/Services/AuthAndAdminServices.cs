@@ -222,3 +222,52 @@ public class InvestmentTypeService
         await _db.SaveChangesAsync(cancellationToken);
     }
 }
+
+public class IncomeTypeService
+{
+    private readonly IAppDbContext _db;
+
+    public IncomeTypeService(IAppDbContext db) => _db = db;
+
+    public async Task<IReadOnlyList<IncomeTypeDto>> ListAsync(CancellationToken cancellationToken = default) =>
+        await _db.IncomeTypes.OrderBy(x => x.Name)
+            .Select(x => new IncomeTypeDto(x.Id, x.Name, x.Description, x.IsActive))
+            .ToListAsync(cancellationToken);
+
+    public async Task<IncomeTypeDto> CreateAsync(UpsertIncomeTypeRequest request, CancellationToken cancellationToken = default)
+    {
+        var entity = new IncomeType
+        {
+            Name = request.Name.Trim(),
+            Description = request.Description,
+            IsActive = request.IsActive
+        };
+        _db.Add(entity);
+        await _db.SaveChangesAsync(cancellationToken);
+        return new IncomeTypeDto(entity.Id, entity.Name, entity.Description, entity.IsActive);
+    }
+
+    public async Task<IncomeTypeDto> UpdateAsync(Guid id, UpsertIncomeTypeRequest request, CancellationToken cancellationToken = default)
+    {
+        var entity = await _db.IncomeTypes.FirstOrDefaultAsync(x => x.Id == id, cancellationToken)
+                     ?? throw new NotFoundException("Tipo de entrada não encontrado.");
+        entity.Name = request.Name.Trim();
+        entity.Description = request.Description;
+        entity.IsActive = request.IsActive;
+        await _db.SaveChangesAsync(cancellationToken);
+        return new IncomeTypeDto(entity.Id, entity.Name, entity.Description, entity.IsActive);
+    }
+
+    public async Task DeleteAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        var entity = await _db.IncomeTypes.FirstOrDefaultAsync(x => x.Id == id, cancellationToken)
+                     ?? throw new NotFoundException("Tipo de entrada não encontrado.");
+        if (await _db.IncomeSources.AnyAsync(i => i.IncomeTypeId == id, cancellationToken))
+        {
+            throw new AppException("Não é possível excluir um tipo de entrada vinculado a entradas.");
+        }
+
+        _db.Remove(entity);
+        await _db.SaveChangesAsync(cancellationToken);
+    }
+}

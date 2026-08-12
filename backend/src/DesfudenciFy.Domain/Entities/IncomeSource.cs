@@ -8,4 +8,8 @@ public class IncomeSource : BaseEntity
     public decimal Amount { get; set; }
     public string Description { get; set; } = string.Empty;
     public bool IsActive { get; set; } = true;
+    public Guid IncomeTypeId { get; set; }
+    public IncomeType IncomeType { get; set; } = null!;
+    public Guid? PropertyId { get; set; }
+    public Property? Property { get; set; }
 }

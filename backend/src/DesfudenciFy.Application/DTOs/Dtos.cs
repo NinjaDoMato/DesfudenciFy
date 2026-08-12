@@ -95,11 +95,19 @@ public record PropertyDto(
     string Address,
     string? PhotoUrl,
     bool IsRented,
+    decimal AppraisedValue,
+    decimal RentalAmount,
     decimal InitialFinancingAmount,
     decimal InstallmentAmount,
     int RemainingInstallments,
     decimal RemainingBalance,
-    IReadOnlyList<PropertyAmortizationDto> Amortizations);
+    decimal TotalExpenses,
+    decimal TotalRentPaid,
+    decimal PropertyCost,
+    decimal PropertyReturn,
+    IReadOnlyList<PropertyAmortizationDto> Amortizations,
+    IReadOnlyList<PropertyExpenseDto> Expenses,
+    IReadOnlyList<PropertyRentPaymentDto> RentPayments);
 
 public record PropertyAmortizationDto(
     Guid Id,
@@ -109,9 +117,25 @@ public record PropertyAmortizationDto(
     string? Observation,
     Guid? EntryId);
 
+public record PropertyExpenseDto(
+    Guid Id,
+    decimal Amount,
+    string Observation,
+    DateTime OccurredAt,
+    Guid? EntryId);
+
+public record PropertyRentPaymentDto(
+    Guid Id,
+    decimal Amount,
+    string? Observation,
+    DateTime PaidAt,
+    Guid EntryId);
+
 public record CreatePropertyRequest(
     string Name,
     string Address,
+    decimal AppraisedValue,
+    decimal RentalAmount,
     decimal InitialFinancingAmount,
     decimal InstallmentAmount,
     int RemainingInstallments,
@@ -121,6 +145,8 @@ public record UpdatePropertyRequest(
     string Name,
     string Address,
     bool IsRented,
+    decimal AppraisedValue,
+    decimal RentalAmount,
     decimal InitialFinancingAmount,
     decimal InstallmentAmount,
     int RemainingInstallments,
@@ -135,6 +161,19 @@ public record CreateAmortizationRequest(
     EntryDestination? CashDestination,
     Guid? ReserveId);
 
+public record CreatePropertyExpenseRequest(
+    decimal Amount,
+    string Observation,
+    DateTime? OccurredAt,
+    bool DebitCash,
+    EntryDestination? CashDestination,
+    Guid? ReserveId);
+
+public record CreatePropertyRentPaymentRequest(
+    decimal Amount,
+    string? Observation,
+    DateTime? PaidAt);
+
 public record FixedCostDto(
     Guid Id,
     string Name,
@@ -144,14 +183,33 @@ public record FixedCostDto(
     DateTime? DueDate,
     Guid? ReserveId,
     string? ReserveName,
+    bool IsActive,
+    Guid? PropertyId,
     IReadOnlyList<CostPaymentDto> Payments);
 
 public record CostPaymentDto(Guid Id, decimal PaidAmount, DateTime DatePaid, Guid? EntryId);
 public record UpsertFixedCostRequest(string Name, string Description, decimal Amount, string Recurrence, DateTime? DueDate, Guid? ReserveId);
 public record CreateCostPaymentRequest(decimal PaidAmount, DateTime? DatePaid);
 
-public record IncomeSourceDto(Guid Id, string Name, decimal Amount, string Description, bool IsActive);
-public record UpsertIncomeSourceRequest(string Name, decimal Amount, string Description, bool IsActive);
+public record IncomeTypeDto(Guid Id, string Name, string? Description, bool IsActive);
+public record UpsertIncomeTypeRequest(string Name, string? Description, bool IsActive);
+
+public record IncomeSourceDto(
+    Guid Id,
+    string Name,
+    decimal Amount,
+    string Description,
+    bool IsActive,
+    Guid IncomeTypeId,
+    string IncomeTypeName,
+    Guid? PropertyId);
+
+public record UpsertIncomeSourceRequest(
+    string Name,
+    decimal Amount,
+    string Description,
+    bool IsActive,
+    Guid IncomeTypeId);
 
 public record PurchaseDto(Guid Id, string Name, string? ProductUrl, IReadOnlyList<InstallmentDto> Installments);
 public record InstallmentDto(Guid Id, decimal Amount, int InstallmentNumber, bool Paid, DateTime DueDate, DateTime? PaidDate, string? PaymentUrl);

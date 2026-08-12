@@ -7,12 +7,15 @@ public interface IAppDbContext
     IQueryable<User> Users { get; }
     IQueryable<BankAccount> BankAccounts { get; }
     IQueryable<InvestmentType> InvestmentTypes { get; }
+    IQueryable<IncomeType> IncomeTypes { get; }
     IQueryable<Reserve> Reserves { get; }
     IQueryable<Entry> Entries { get; }
     IQueryable<Investment> Investments { get; }
     IQueryable<ReserveInvestment> ReserveInvestments { get; }
     IQueryable<Property> Properties { get; }
     IQueryable<PropertyAmortization> PropertyAmortizations { get; }
+    IQueryable<PropertyExpense> PropertyExpenses { get; }
+    IQueryable<PropertyRentPayment> PropertyRentPayments { get; }
     IQueryable<FixedCost> FixedCosts { get; }
     IQueryable<CostPayment> CostPayments { get; }
     IQueryable<IncomeSource> IncomeSources { get; }

@@ -53,10 +53,16 @@ export interface Property {
   address: string
   photoUrl?: string | null
   isRented: boolean
+  appraisedValue: number
+  rentalAmount: number
   initialFinancingAmount: number
   installmentAmount: number
   remainingInstallments: number
   remainingBalance: number
+  totalExpenses: number
+  totalRentPaid: number
+  propertyCost: number
+  propertyReturn: number
   amortizations: {
     id: string
     amount: number
@@ -64,6 +70,20 @@ export interface Property {
     paidAt: string
     observation?: string | null
     entryId?: string | null
+  }[]
+  expenses: {
+    id: string
+    amount: number
+    observation: string
+    occurredAt: string
+    entryId?: string | null
+  }[]
+  rentPayments: {
+    id: string
+    amount: number
+    observation?: string | null
+    paidAt: string
+    entryId: string
   }[]
 }
 
@@ -75,6 +95,13 @@ export interface BankAccount {
 }
 
 export interface InvestmentType {
+  id: string
+  name: string
+  description?: string | null
+  isActive: boolean
+}
+
+export interface IncomeType {
   id: string
   name: string
   description?: string | null
@@ -106,6 +133,8 @@ export interface FixedCost {
   dueDate?: string | null
   reserveId?: string | null
   reserveName?: string | null
+  isActive: boolean
+  propertyId?: string | null
   payments: CostPayment[]
 }
 
@@ -115,6 +144,9 @@ export interface IncomeSource {
   amount: number
   description: string
   isActive: boolean
+  incomeTypeId: string
+  incomeTypeName: string
+  propertyId?: string | null
 }
 
 export interface Purchase {

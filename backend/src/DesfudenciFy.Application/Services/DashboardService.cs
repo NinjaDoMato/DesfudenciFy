@@ -25,7 +25,7 @@ public class DashboardService
             .SumAsync(e => (decimal?)e.Amount, cancellationToken) ?? 0m;
         var invested = await _db.ReserveInvestments.SumAsync(ri => (decimal?)ri.Amount, cancellationToken) ?? 0m;
         var income = await _db.IncomeSources.Where(i => i.IsActive).SumAsync(i => (decimal?)i.Amount, cancellationToken) ?? 0m;
-        var fixedCosts = await _db.FixedCosts.SumAsync(c => (decimal?)c.Amount, cancellationToken) ?? 0m;
+        var fixedCosts = await _db.FixedCosts.Where(c => c.IsActive).SumAsync(c => (decimal?)c.Amount, cancellationToken) ?? 0m;
         var monthlyGoal = await _db.Reserves.SumAsync(r => (decimal?)(r.MonthlyGoal ?? 0m), cancellationToken) ?? 0m;
         var propertyRemaining = await _db.Properties
             .SumAsync(p => (decimal?)p.RemainingBalance, cancellationToken) ?? 0m;
@@ -131,7 +131,7 @@ public class DashboardService
         var horizon = now.AddMonths(2);
 
         var pendingCosts = await _db.FixedCosts
-            .Where(c => c.DueDate != null && c.DueDate <= horizon)
+            .Where(c => c.IsActive && c.DueDate != null && c.DueDate <= horizon)
             .OrderBy(c => c.DueDate)
             .Take(20)
             .Select(c => new UpcomingBillDto("FixedCost", c.Id, c.Name, c.Amount, c.DueDate))

@@ -23,6 +23,7 @@ public class FixedCostService
         var items = await _db.FixedCosts
             .Include(c => c.Reserve)
             .Include(c => c.Payments)
+            .Where(c => c.IsActive)
             .OrderBy(c => c.Name)
             .ToListAsync(cancellationToken);
         return items.Select(Map).ToList();
@@ -45,7 +46,8 @@ public class FixedCostService
             Amount = request.Amount,
             Recurrence = recurrence,
             DueDate = NormalizeDueDate(request.DueDate),
-            ReserveId = request.ReserveId
+            ReserveId = request.ReserveId,
+            IsActive = true
         };
         _db.Add(entity);
         await _db.SaveChangesAsync(cancellationToken);
@@ -160,6 +162,8 @@ public class FixedCostService
             cost.DueDate,
             cost.ReserveId,
             cost.Reserve?.Name,
+            cost.IsActive,
+            cost.PropertyId,
             cost.Payments
                 .OrderByDescending(p => p.DatePaid)
                 .Select(p => new CostPaymentDto(p.Id, p.PaidAmount, p.DatePaid, p.EntryId))
@@ -173,34 +177,49 @@ public class IncomeSourceService
     public IncomeSourceService(IAppDbContext db) => _db = db;
 
     public async Task<IReadOnlyList<IncomeSourceDto>> ListAsync(CancellationToken cancellationToken = default) =>
-        await _db.IncomeSources.Where(i => i.IsActive).OrderBy(i => i.Name)
-            .Select(i => new IncomeSourceDto(i.Id, i.Name, i.Amount, i.Description, i.IsActive))
+        await _db.IncomeSources
+            .Include(i => i.IncomeType)
+            .Where(i => i.IsActive)
+            .OrderBy(i => i.Name)
+            .Select(i => new IncomeSourceDto(
+                i.Id,
+                i.Name,
+                i.Amount,
+                i.Description,
+                i.IsActive,
+                i.IncomeTypeId,
+                i.IncomeType.Name,
+                i.PropertyId))
             .ToListAsync(cancellationToken);
 
     public async Task<IncomeSourceDto> CreateAsync(UpsertIncomeSourceRequest request, CancellationToken cancellationToken = default)
     {
+        var type = await RequireActiveIncomeTypeAsync(request.IncomeTypeId, cancellationToken);
         var entity = new IncomeSource
         {
             Name = request.Name.Trim(),
             Amount = request.Amount,
             Description = request.Description?.Trim() ?? string.Empty,
-            IsActive = request.IsActive
+            IsActive = request.IsActive,
+            IncomeTypeId = type.Id
         };
         _db.Add(entity);
         await _db.SaveChangesAsync(cancellationToken);
-        return new IncomeSourceDto(entity.Id, entity.Name, entity.Amount, entity.Description, entity.IsActive);
+        return new IncomeSourceDto(entity.Id, entity.Name, entity.Amount, entity.Description, entity.IsActive, type.Id, type.Name, entity.PropertyId);
     }
 
     public async Task<IncomeSourceDto> UpdateAsync(Guid id, UpsertIncomeSourceRequest request, CancellationToken cancellationToken = default)
     {
-        var entity = await _db.IncomeSources.FirstOrDefaultAsync(i => i.Id == id, cancellationToken)
+        var entity = await _db.IncomeSources.Include(i => i.IncomeType).FirstOrDefaultAsync(i => i.Id == id, cancellationToken)
                      ?? throw new NotFoundException("Entrada não encontrada.");
+        var type = await RequireActiveIncomeTypeAsync(request.IncomeTypeId, cancellationToken);
         entity.Name = request.Name.Trim();
         entity.Amount = request.Amount;
         entity.Description = request.Description?.Trim() ?? string.Empty;
         entity.IsActive = request.IsActive;
+        entity.IncomeTypeId = type.Id;
         await _db.SaveChangesAsync(cancellationToken);
-        return new IncomeSourceDto(entity.Id, entity.Name, entity.Amount, entity.Description, entity.IsActive);
+        return new IncomeSourceDto(entity.Id, entity.Name, entity.Amount, entity.Description, entity.IsActive, type.Id, type.Name, entity.PropertyId);
     }
 
     public async Task DeleteAsync(Guid id, CancellationToken cancellationToken = default)
@@ -209,6 +228,12 @@ public class IncomeSourceService
                      ?? throw new NotFoundException("Entrada não encontrada.");
         entity.IsActive = false;
         await _db.SaveChangesAsync(cancellationToken);
+    }
+
+    private async Task<IncomeType> RequireActiveIncomeTypeAsync(Guid incomeTypeId, CancellationToken cancellationToken)
+    {
+        return await _db.IncomeTypes.FirstOrDefaultAsync(t => t.Id == incomeTypeId && t.IsActive, cancellationToken)
+               ?? throw new AppException("Tipo de entrada inválido ou inativo.");
     }
 }
 

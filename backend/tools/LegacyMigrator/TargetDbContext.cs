@@ -16,12 +16,15 @@ internal sealed class TargetDbContext : DbContext
     public DbSet<User> Users => Set<User>();
     public DbSet<BankAccount> BankAccounts => Set<BankAccount>();
     public DbSet<InvestmentType> InvestmentTypes => Set<InvestmentType>();
+    public DbSet<IncomeType> IncomeTypes => Set<IncomeType>();
     public DbSet<Reserve> Reserves => Set<Reserve>();
     public DbSet<Entry> Entries => Set<Entry>();
     public DbSet<Investment> Investments => Set<Investment>();
     public DbSet<ReserveInvestment> ReserveInvestments => Set<ReserveInvestment>();
     public DbSet<Property> Properties => Set<Property>();
     public DbSet<PropertyAmortization> PropertyAmortizations => Set<PropertyAmortization>();
+    public DbSet<PropertyExpense> PropertyExpenses => Set<PropertyExpense>();
+    public DbSet<PropertyRentPayment> PropertyRentPayments => Set<PropertyRentPayment>();
     public DbSet<FixedCost> FixedCosts => Set<FixedCost>();
     public DbSet<CostPayment> CostPayments => Set<CostPayment>();
     public DbSet<IncomeSource> IncomeSources => Set<IncomeSource>();

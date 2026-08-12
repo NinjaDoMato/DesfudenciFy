@@ -106,3 +106,31 @@ public class InvestmentTypesController : ControllerBase
         return NoContent();
     }
 }
+
+[ApiController]
+[Authorize(Roles = "Admin")]
+[Route("api/v1/admin/income-types")]
+public class IncomeTypesController : ControllerBase
+{
+    private readonly IncomeTypeService _service;
+
+    public IncomeTypesController(IncomeTypeService service) => _service = service;
+
+    [HttpGet]
+    public Task<IReadOnlyList<IncomeTypeDto>> List(CancellationToken cancellationToken) => _service.ListAsync(cancellationToken);
+
+    [HttpPost]
+    public Task<IncomeTypeDto> Create([FromBody] UpsertIncomeTypeRequest request, CancellationToken cancellationToken) =>
+        _service.CreateAsync(request, cancellationToken);
+
+    [HttpPut("{id:guid}")]
+    public Task<IncomeTypeDto> Update(Guid id, [FromBody] UpsertIncomeTypeRequest request, CancellationToken cancellationToken) =>
+        _service.UpdateAsync(id, request, cancellationToken);
+
+    [HttpDelete("{id:guid}")]
+    public async Task<IActionResult> Delete(Guid id, CancellationToken cancellationToken)
+    {
+        await _service.DeleteAsync(id, cancellationToken);
+        return NoContent();
+    }
+}

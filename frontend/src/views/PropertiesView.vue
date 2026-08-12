@@ -23,6 +23,8 @@ const form = reactive({
   installmentAmount: 0,
   remainingInstallments: 0,
   remainingBalance: 0,
+  appraisedValue: 0,
+  rentalAmount: 0,
 })
 
 const columns: DataTableColumn<Property>[] = [
@@ -49,6 +51,8 @@ function openCreate() {
     installmentAmount: 0,
     remainingInstallments: 0,
     remainingBalance: 0,
+    appraisedValue: 0,
+    rentalAmount: 0,
   })
   photoFile.value = null
   showForm.value = true
@@ -84,6 +88,8 @@ async function create() {
     const { data } = await api.post<Property>('/properties', {
       name: form.name,
       address: form.address,
+      appraisedValue: Number(form.appraisedValue),
+      rentalAmount: Number(form.rentalAmount),
       initialFinancingAmount: Number(form.initialFinancingAmount),
       installmentAmount: Number(form.installmentAmount),
       remainingInstallments: Number(form.remainingInstallments),
@@ -163,6 +169,8 @@ onMounted(async () => {
           <label>Foto</label>
           <input type="file" accept="image/*" @change="photoFile = ($event.target as HTMLInputElement).files?.[0] || null" />
         </div>
+        <div class="field"><label>Valor avaliado</label><MoneyInput v-model="form.appraisedValue" /></div>
+        <div class="field"><label>Valor do aluguel</label><MoneyInput v-model="form.rentalAmount" /></div>
         <div class="field"><label>Valor inicial financiamento</label><MoneyInput v-model="form.initialFinancingAmount" /></div>
         <div class="field"><label>Valor da parcela</label><MoneyInput v-model="form.installmentAmount" /></div>
         <div class="field"><label>Parcelas restantes</label><input v-model.number="form.remainingInstallments" type="number" min="0" /></div>

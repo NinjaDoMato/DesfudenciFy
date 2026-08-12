@@ -18,6 +18,7 @@ public sealed class TestDbFixture : IAsyncDisposable
     public PropertyService Properties { get; }
     public FixedCostService FixedCosts { get; }
     public PurchaseService Purchases { get; }
+    public IncomeSourceService IncomeSources { get; }
 
     public TestDbFixture()
     {
@@ -36,6 +37,20 @@ public sealed class TestDbFixture : IAsyncDisposable
         Properties = new PropertyService(AppDb, new NoOpFileStorage(), Balance);
         FixedCosts = new FixedCostService(AppDb, Balance);
         Purchases = new PurchaseService(AppDb);
+        IncomeSources = new IncomeSourceService(AppDb);
+
+        SeedIncomeTypes();
+    }
+
+    private void SeedIncomeTypes()
+    {
+        Db.IncomeTypes.AddRange(
+            new IncomeType { Name = "Salário", IsActive = true },
+            new IncomeType { Name = "Vale Refeição", IsActive = true },
+            new IncomeType { Name = "Vale Alimentação", IsActive = true },
+            new IncomeType { Name = "Aluguel", IsActive = true },
+            new IncomeType { Name = "Renda extra", IsActive = true });
+        Db.SaveChanges();
     }
 
     public async Task<Reserve> SeedReserveAsync(string name = "Reserva")

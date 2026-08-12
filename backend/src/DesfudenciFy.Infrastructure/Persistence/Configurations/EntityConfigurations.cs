@@ -39,6 +39,17 @@ public class InvestmentTypeConfiguration : IEntityTypeConfiguration<InvestmentTy
     }
 }
 
+public class IncomeTypeConfiguration : IEntityTypeConfiguration<IncomeType>
+{
+    public void Configure(EntityTypeBuilder<IncomeType> builder)
+    {
+        builder.ToTable("IncomeTypes");
+        builder.HasKey(x => x.Id);
+        builder.Property(x => x.Name).HasMaxLength(100).IsRequired();
+        builder.Property(x => x.Description).HasMaxLength(500);
+    }
+}
+
 public class ReserveConfiguration : IEntityTypeConfiguration<Reserve>
 {
     public void Configure(EntityTypeBuilder<Reserve> builder)
@@ -118,6 +129,8 @@ public class PropertyConfiguration : IEntityTypeConfiguration<Property>
         builder.Property(x => x.Name).HasMaxLength(200).IsRequired();
         builder.Property(x => x.Address).HasMaxLength(500).IsRequired();
         builder.Property(x => x.PhotoPath).HasMaxLength(1000);
+        builder.Property(x => x.AppraisedValue).HasPrecision(18, 2);
+        builder.Property(x => x.RentalAmount).HasPrecision(18, 2);
         builder.Property(x => x.InitialFinancingAmount).HasPrecision(18, 2);
         builder.Property(x => x.InstallmentAmount).HasPrecision(18, 2);
         builder.Property(x => x.RemainingBalance).HasPrecision(18, 2);
@@ -143,6 +156,44 @@ public class PropertyAmortizationConfiguration : IEntityTypeConfiguration<Proper
     }
 }
 
+public class PropertyExpenseConfiguration : IEntityTypeConfiguration<PropertyExpense>
+{
+    public void Configure(EntityTypeBuilder<PropertyExpense> builder)
+    {
+        builder.ToTable("PropertyExpenses");
+        builder.HasKey(x => x.Id);
+        builder.Property(x => x.Amount).HasPrecision(18, 2);
+        builder.Property(x => x.Observation).HasMaxLength(500).IsRequired();
+        builder.HasOne(x => x.Property)
+            .WithMany(x => x.Expenses)
+            .HasForeignKey(x => x.PropertyId)
+            .OnDelete(DeleteBehavior.Cascade);
+        builder.HasOne(x => x.Entry)
+            .WithMany()
+            .HasForeignKey(x => x.EntryId)
+            .OnDelete(DeleteBehavior.SetNull);
+    }
+}
+
+public class PropertyRentPaymentConfiguration : IEntityTypeConfiguration<PropertyRentPayment>
+{
+    public void Configure(EntityTypeBuilder<PropertyRentPayment> builder)
+    {
+        builder.ToTable("PropertyRentPayments");
+        builder.HasKey(x => x.Id);
+        builder.Property(x => x.Amount).HasPrecision(18, 2);
+        builder.Property(x => x.Observation).HasMaxLength(500);
+        builder.HasOne(x => x.Property)
+            .WithMany(x => x.RentPayments)
+            .HasForeignKey(x => x.PropertyId)
+            .OnDelete(DeleteBehavior.Cascade);
+        builder.HasOne(x => x.Entry)
+            .WithMany()
+            .HasForeignKey(x => x.EntryId)
+            .OnDelete(DeleteBehavior.Restrict);
+    }
+}
+
 public class FixedCostConfiguration : IEntityTypeConfiguration<FixedCost>
 {
     public void Configure(EntityTypeBuilder<FixedCost> builder)
@@ -156,6 +207,11 @@ public class FixedCostConfiguration : IEntityTypeConfiguration<FixedCost>
             .WithMany(x => x.FixedCosts)
             .HasForeignKey(x => x.ReserveId)
             .OnDelete(DeleteBehavior.SetNull);
+        builder.HasOne(x => x.Property)
+            .WithMany()
+            .HasForeignKey(x => x.PropertyId)
+            .OnDelete(DeleteBehavior.SetNull);
+        builder.HasIndex(x => x.PropertyId);
     }
 }
 
@@ -186,6 +242,15 @@ public class IncomeSourceConfiguration : IEntityTypeConfiguration<IncomeSource>
         builder.Property(x => x.Name).HasMaxLength(100).IsRequired();
         builder.Property(x => x.Description).HasMaxLength(500);
         builder.Property(x => x.Amount).HasPrecision(18, 2);
+        builder.HasOne(x => x.IncomeType)
+            .WithMany(x => x.IncomeSources)
+            .HasForeignKey(x => x.IncomeTypeId)
+            .OnDelete(DeleteBehavior.Restrict);
+        builder.HasOne(x => x.Property)
+            .WithMany()
+            .HasForeignKey(x => x.PropertyId)
+            .OnDelete(DeleteBehavior.SetNull);
+        builder.HasIndex(x => x.PropertyId);
     }
 }
 

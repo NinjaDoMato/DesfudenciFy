@@ -19,7 +19,9 @@ const openGroups = ref<Record<string, boolean>>({
 
 const isAdminRoute = computed(() => route.path.startsWith('/admin'))
 const isSettingsRoute = computed(() =>
-  route.path.startsWith('/admin/bank-accounts') || route.path.startsWith('/admin/investment-types'),
+  route.path.startsWith('/admin/bank-accounts') ||
+  route.path.startsWith('/admin/investment-types') ||
+  route.path.startsWith('/admin/income-types'),
 )
 
 watch(
@@ -156,6 +158,10 @@ async function onLogout() {
                 <RouterLink class="nav-link nested" to="/admin/investment-types">
                   <NavIcon name="investment-types" />
                   <span>Tipos de Investimentos</span>
+                </RouterLink>
+                <RouterLink class="nav-link nested" to="/admin/income-types">
+                  <NavIcon name="income" />
+                  <span>Tipos de Entrada</span>
                 </RouterLink>
                 <RouterLink class="nav-link nested" to="/admin/bank-accounts">
                   <NavIcon name="bank-accounts" />

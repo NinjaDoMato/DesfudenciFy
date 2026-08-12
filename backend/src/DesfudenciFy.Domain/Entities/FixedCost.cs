@@ -12,6 +12,9 @@ public class FixedCost : BaseEntity
     public DateTime? DueDate { get; set; }
     public Guid? ReserveId { get; set; }
     public Reserve? Reserve { get; set; }
+    public bool IsActive { get; set; } = true;
+    public Guid? PropertyId { get; set; }
+    public Property? Property { get; set; }
 
     public ICollection<CostPayment> Payments { get; set; } = new List<CostPayment>();
 }

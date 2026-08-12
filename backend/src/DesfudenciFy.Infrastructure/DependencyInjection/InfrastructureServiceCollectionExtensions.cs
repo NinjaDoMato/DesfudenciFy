@@ -81,5 +81,31 @@ public static class InfrastructureServiceCollectionExtensions
                 new InvestmentType { Name = "FII" });
             await db.SaveChangesAsync();
         }
+
+        if (!await db.IncomeTypes.AnyAsync())
+        {
+            db.IncomeTypes.AddRange(
+                new IncomeType { Name = "Salário" },
+                new IncomeType { Name = "Vale Refeição" },
+                new IncomeType { Name = "Vale Alimentação" },
+                new IncomeType { Name = "Aluguel" },
+                new IncomeType { Name = "Renda extra" });
+            await db.SaveChangesAsync();
+        }
+        else
+        {
+            // Ensure default catalog names exist even if migration inserted only "Renda extra" for backfill.
+            var existingNames = await db.IncomeTypes.Select(t => t.Name).ToListAsync();
+            var defaults = new[] { "Salário", "Vale Refeição", "Vale Alimentação", "Aluguel", "Renda extra" };
+            foreach (var name in defaults.Where(n => !existingNames.Contains(n)))
+            {
+                db.IncomeTypes.Add(new IncomeType { Name = name });
+            }
+
+            if (db.ChangeTracker.HasChanges())
+            {
+                await db.SaveChangesAsync();
+            }
+        }
     }
 }
