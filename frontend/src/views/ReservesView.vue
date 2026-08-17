@@ -2,7 +2,8 @@
 import { computed, onMounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import api from '@/api/client'
-import { formatMoney, type Reserve } from '@/types'
+import { formatMoney, type DashboardTotals, type Reserve } from '@/types'
+import { computeReserveTotals } from '@/utils/totals'
 import MoneyInput from '@/components/MoneyInput.vue'
 import DataTable from '@/components/DataTable.vue'
 import IconButton from '@/components/IconButton.vue'
@@ -12,6 +13,8 @@ import { useToastStore } from '@/stores/toast'
 const router = useRouter()
 const toast = useToastStore()
 const items = ref<Reserve[]>([])
+const freeAvailable = ref(0)
+const totalInvested = ref(0)
 const nameFilter = ref('')
 const showForm = ref(false)
 const form = reactive({
@@ -37,13 +40,22 @@ const filteredItems = computed(() => {
   return items.value.filter((item) => item.name.toLowerCase().includes(term))
 })
 
+const totals = computed(() =>
+  computeReserveTotals(freeAvailable.value, totalInvested.value, items.value),
+)
+
 function toastError(e: unknown, fallback: string) {
   toast.error(e instanceof Error ? e.message : fallback)
 }
 
 async function load() {
-  const { data } = await api.get<Reserve[]>('/reserves')
-  items.value = data
+  const [reservesRes, dashboardRes] = await Promise.all([
+    api.get<Reserve[]>('/reserves'),
+    api.get<DashboardTotals>('/dashboard/totals'),
+  ])
+  items.value = reservesRes.data
+  freeAvailable.value = dashboardRes.data.totalFreeBalance
+  totalInvested.value = dashboardRes.data.totalInvested
 }
 
 function openCreate() {
@@ -99,6 +111,36 @@ onMounted(async () => {
         <p class="muted">Metas e capital alocado.</p>
       </div>
       <button class="btn" type="button" @click="openCreate">Nova reserva</button>
+    </div>
+    <div class="grid grid-totals">
+      <div class="kpi">
+        <div class="label">Saldo livre</div>
+        <div class="value">{{ formatMoney(totals.saldoLivre) }}</div>
+      </div>
+      <div class="kpi">
+        <div class="label">Saldo reservado</div>
+        <div class="value">{{ formatMoney(totals.saldoReservado) }}</div>
+      </div>
+      <div class="kpi">
+        <div class="label">Total acumulado</div>
+        <div class="value">{{ formatMoney(totals.totalAcumulado) }}</div>
+      </div>
+      <div class="kpi">
+        <div class="label">Total investido</div>
+        <div class="kpi-body">
+          <div class="value">{{ formatMoney(totals.totalInvestido) }}</div>
+          <div class="kpi-break">
+            <div class="kpi-break-row">
+              <span>Do saldo livre</span>
+              <strong>{{ formatMoney(totals.investedFromFree) }}</strong>
+            </div>
+            <div class="kpi-break-row">
+              <span>Das reservas</span>
+              <strong>{{ formatMoney(totals.investedFromReserves) }}</strong>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
     <div class="panel">
       <div class="filters filters-inline">

@@ -190,7 +190,9 @@ export interface DashboardTotals {
   monthlyInvestmentGoal: number
   monthlyBalance: number
   totalPropertyRemainingBalance: number
+  totalFinancialCapital: number
+  totalPropertyAppraisedValue: number
 }
 
-export { formatMoney, parseMoneyInput } from '@/utils/money'
+export { formatMoney, moneyPolarity, parseMoneyInput } from '@/utils/money'
 

@@ -53,4 +53,38 @@ public class DashboardTotalsTests
 
         Assert.Equal(4900m, totals.MonthlyBalance);
     }
+
+    [Fact]
+    public async Task Accumulated_wealth_should_add_financial_capital_and_property_appraised_values()
+    {
+        await using var fx = new TestDbFixture();
+        await fx.CreditFreeAsync(1000m);
+        var reserve = await fx.SeedReserveAsync();
+        await fx.CreditReserveAsync(reserve.Id, 400m);
+        await fx.Properties.CreateAsync(new CreatePropertyRequest(
+            "Apto",
+            "Rua A",
+            300_000m,
+            0m,
+            200_000m,
+            1_500m,
+            120,
+            180_000m));
+        await fx.Properties.CreateAsync(new CreatePropertyRequest(
+            "Casa",
+            "Rua B",
+            150_000m,
+            0m,
+            0m,
+            0m,
+            0,
+            0m));
+
+        var dashboard = new DashboardService(fx.AppDb, fx.Balance);
+        var totals = await dashboard.GetTotalsAsync();
+
+        Assert.Equal(1_400m, totals.TotalFinancialCapital);
+        Assert.Equal(450_000m, totals.TotalPropertyAppraisedValue);
+        Assert.Equal(451_400m, totals.TotalAccumulated);
+    }
 }

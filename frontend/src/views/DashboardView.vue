@@ -12,7 +12,8 @@ import {
   Legend,
 } from 'chart.js'
 import api from '@/api/client'
-import { formatMoney, type DashboardTotals } from '@/types'
+import { formatMoney, moneyPolarity, type DashboardTotals } from '@/types'
+import { computePatrimonioTotals } from '@/utils/totals'
 import DataTable from '@/components/DataTable.vue'
 import type { DataTableColumn } from '@/composables/useDataTable'
 import { useThemeStore } from '@/stores/theme'
@@ -62,6 +63,14 @@ const distribution = ref<DistributionItem[]>([])
 const typeDistribution = ref<DistributionItem[]>([])
 const upcomingInvestments = ref<UpcomingInvestment[]>([])
 const upcomingBills = ref<UpcomingBill[]>([])
+
+const patrimonio = computed(() => {
+  if (!totals.value) return null
+  return computePatrimonioTotals(
+    totals.value.totalFinancialCapital,
+    totals.value.totalPropertyAppraisedValue,
+  )
+})
 function toastError(e: unknown, fallback: string) {
   toast.error(e instanceof Error ? e.message : fallback)
 }
@@ -222,11 +231,29 @@ onMounted(async () => {
         <p class="muted">Visão geral do capital livre, investido e compromissos.</p>
       </div>
     </div>
-    <div v-if="totals" class="grid grid-4">
-      <div class="kpi"><div class="label">Total acumulado</div><div class="value">{{ formatMoney(totals.totalAccumulated) }}</div></div>
+    <div v-if="totals && patrimonio" class="grid grid-totals-lead">
+      <div class="kpi">
+        <div class="label">Patrimônio acumulado</div>
+        <div class="kpi-body">
+          <div class="value">{{ formatMoney(patrimonio.patrimonio) }}</div>
+          <div class="kpi-break">
+            <div class="kpi-break-row">
+              <span>Saldo + reservas</span>
+              <strong>{{ formatMoney(patrimonio.financialCapital) }}</strong>
+            </div>
+            <div class="kpi-break-row">
+              <span>Imóveis</span>
+              <strong>{{ formatMoney(patrimonio.propertyAppraised) }}</strong>
+            </div>
+          </div>
+        </div>
+      </div>
       <div class="kpi"><div class="label">Saldo livre</div><div class="value">{{ formatMoney(totals.totalFreeBalance) }}</div></div>
       <div class="kpi"><div class="label">Investido</div><div class="value">{{ formatMoney(totals.totalInvested) }}</div></div>
-      <div class="kpi"><div class="label">Saldo mensal</div><div class="value">{{ formatMoney(totals.monthlyBalance) }}</div></div>
+      <div class="kpi">
+        <div class="label">Saldo mensal</div>
+        <div class="value" :class="moneyPolarity(totals.monthlyBalance)">{{ formatMoney(totals.monthlyBalance) }}</div>
+      </div>
     </div>
     <div class="charts-stack">
       <div class="panel chart-main">

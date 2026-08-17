@@ -252,7 +252,9 @@ public record DashboardTotalsDto(
     decimal TotalFixedCosts,
     decimal MonthlyInvestmentGoal,
     decimal MonthlyBalance,
-    decimal TotalPropertyRemainingBalance);
+    decimal TotalPropertyRemainingBalance,
+    decimal TotalFinancialCapital,
+    decimal TotalPropertyAppraisedValue);
 
 public record MonthlyCapitalDto(string Month, decimal FreeCapital, decimal InvestedCapital);
 public record ReserveDistributionDto(Guid ReserveId, string Name, decimal Value, string? Color);

@@ -124,6 +124,29 @@ h1, h2, h3 {
 
 .grid-2 { grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
 .grid-4 { grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); }
+.grid-totals {
+  align-items: stretch;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) minmax(15.5rem, 1.5fr);
+}
+
+.grid-totals-lead {
+  align-items: stretch;
+  grid-template-columns: minmax(15.5rem, 1.5fr) repeat(3, minmax(0, 1fr));
+}
+
+@media (max-width: 960px) {
+  .grid-totals,
+  .grid-totals-lead {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 560px) {
+  .grid-totals,
+  .grid-totals-lead {
+    grid-template-columns: 1fr;
+  }
+}
 
 .btn {
   border: none;
@@ -237,6 +260,60 @@ th {
   font-weight: 700;
   margin-top: 0.35rem;
   letter-spacing: -0.02em;
+}
+
+.kpi .value.positive {
+  color: var(--success);
+}
+
+.kpi .value.negative {
+  color: var(--danger);
+}
+
+.kpi-body {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem 1rem;
+  margin-top: 0.35rem;
+  min-width: 0;
+}
+
+.kpi-body .value {
+  margin-top: 0;
+  flex: 0 0 auto;
+}
+
+.kpi-break {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.12rem;
+  margin-top: 0;
+  min-width: 0;
+  flex: 1 1 7.5rem;
+  padding-left: 0.85rem;
+  border-left: 1px solid var(--border);
+  font-size: 0.75rem;
+  line-height: 1.25;
+  color: var(--muted);
+}
+
+.kpi-break-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.kpi-break-row span {
+  white-space: nowrap;
+}
+
+.kpi-break strong {
+  color: var(--text);
+  font-weight: 600;
+  white-space: nowrap;
 }
 
 .badge {

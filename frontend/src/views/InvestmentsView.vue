@@ -4,14 +4,17 @@ import { useRoute, useRouter } from 'vue-router'
 import api from '@/api/client'
 import {
   formatMoney,
+  moneyPolarity,
   type BankAccount,
   type Investment,
   type InvestmentType,
   type Reserve,
 } from '@/types'
+import { computeInvestmentTotals } from '@/utils/totals'
 import MoneyInput from '@/components/MoneyInput.vue'
 import DataTable from '@/components/DataTable.vue'
 import IconButton from '@/components/IconButton.vue'
+import LiquidationModal from '@/components/LiquidationModal.vue'
 import type { DataTableColumn } from '@/composables/useDataTable'
 import { useToastStore } from '@/stores/toast'
 
@@ -58,7 +61,6 @@ const showAmount = ref<Investment | null>(null)
 const currentAmount = ref(0)
 const showDetails = ref<Investment | null>(null)
 const showLiquidation = ref<Investment | null>(null)
-const liquidating = ref(false)
 const originalAllocations = ref<AllocationRow[]>([])
 
 const form = reactive({
@@ -84,28 +86,6 @@ function toSourceRows(item: Investment): SourceRow[] {
   }))
 }
 
-const liquidationSummary = computed(() => {
-  const item = showLiquidation.value
-  if (!item) return null
-
-  const invested = item.startAmount
-  const finalValue = item.currentAmount
-  const profit = Math.round((finalValue - invested) * 100) / 100
-  const distributions = toSourceRows(item).map((source) => {
-    const proportion = invested > 0 ? source.amount / invested : 0
-    const profitShare = profit > 0 ? Math.round(proportion * profit * 100) / 100 : 0
-    return {
-      sourceKey: source.sourceKey,
-      reserveId: source.reserveId,
-      investedAmount: source.amount,
-      proportion,
-      profitShare,
-    }
-  })
-
-  return { invested, finalValue, profit, distributions }
-})
-
 const detailRows = computed(() => (showDetails.value ? toSourceRows(showDetails.value) : []))
 
 const columns: DataTableColumn<Investment>[] = [
@@ -119,6 +99,8 @@ const columns: DataTableColumn<Investment>[] = [
   { key: 'endDate', label: 'Fim', sortValue: (row) => (row.endDate ? new Date(row.endDate) : null) },
   { key: 'actions', label: '', sortable: false },
 ]
+
+const screenTotals = computed(() => computeInvestmentTotals(items.value))
 
 const filteredItems = computed(() => {
   const nameTerm = filters.name.trim().toLowerCase()
@@ -145,19 +127,6 @@ const detailColumns: DataTableColumn<SourceRow>[] = [
       return start > 0 ? row.amount / start : 0
     },
   },
-]
-
-const liquidationColumns: DataTableColumn<{
-  sourceKey: string
-  reserveId: string | null
-  investedAmount: number
-  proportion: number
-  profitShare: number
-}>[] = [
-  { key: 'reserveId', label: 'Origem', sortValue: (row) => sourceLabel(row.reserveId) },
-  { key: 'investedAmount', label: 'Investido', sortValue: (row) => row.investedAmount },
-  { key: 'proportion', label: 'Proporção', sortValue: (row) => row.proportion },
-  { key: 'profitShare', label: 'Lucro a lançar', sortValue: (row) => row.profitShare },
 ]
 
 function sourceLabel(reserveId: string | null | undefined) {
@@ -353,18 +322,11 @@ function openLiquidation(item: Investment) {
   showLiquidation.value = item
 }
 
-async function confirmLiquidation() {
-  if (!showLiquidation.value) return
-  liquidating.value = true
-  try {
-    await api.post(`/investments/${showLiquidation.value.id}/liquidate`)
-    showLiquidation.value = null
-    await load()
-  } catch (e) {
-    toastError(e, 'Erro ao liquidar')
-  } finally {
-    liquidating.value = false
-  }
+function onLiquidated() {
+  showLiquidation.value = null
+  void load().catch((error) => {
+    toastError(error, 'Erro')
+  })
 }
 
 onMounted(async () => {
@@ -385,6 +347,22 @@ onMounted(async () => {
         <p class="muted">Renda fixa com saldo livre e/ou reservas. Na liquidação, o lucro é rateado pelo valor investido.</p>
       </div>
       <button class="btn" type="button" @click="openCreate">Novo investimento</button>
+    </div>
+    <div class="grid grid-4">
+      <div class="kpi">
+        <div class="label">Número de investimentos</div>
+        <div class="value">{{ screenTotals.count }}</div>
+      </div>
+      <div class="kpi">
+        <div class="label">Total investido</div>
+        <div class="value">{{ formatMoney(screenTotals.totalInvestido) }}</div>
+      </div>
+      <div class="kpi">
+        <div class="label">Lucro retido</div>
+        <div class="value" :class="moneyPolarity(screenTotals.lucroRetido)">
+          {{ formatMoney(screenTotals.lucroRetido) }}
+        </div>
+      </div>
     </div>
     <div class="panel">
       <div class="filters">
@@ -556,59 +534,13 @@ onMounted(async () => {
       </div>
     </div>
 
-    <div v-if="showLiquidation && liquidationSummary" class="modal-backdrop" @click.self="!liquidating && (showLiquidation = null)">
-      <div class="modal wide">
-        <h2>Resumo da liquidação</h2>
-        <p class="muted">O principal volta ao disponível das origens; o lucro é lançado proporcionalmente (saldo livre ou reserva).</p>
-
-        <div class="summary-grid">
-          <div class="kpi">
-            <div class="label">Investimento</div>
-            <div class="value value-sm">{{ showLiquidation.name }}</div>
-          </div>
-          <div class="kpi">
-            <div class="label">Valor investido original</div>
-            <div class="value">{{ formatMoney(liquidationSummary.invested) }}</div>
-          </div>
-          <div class="kpi">
-            <div class="label">Valor final</div>
-            <div class="value">{{ formatMoney(liquidationSummary.finalValue) }}</div>
-          </div>
-          <div class="kpi">
-            <div class="label">Lucro</div>
-            <div class="value" :class="{ profit: liquidationSummary.profit > 0, zero: liquidationSummary.profit <= 0 }">
-              {{ formatMoney(liquidationSummary.profit) }}
-            </div>
-          </div>
-        </div>
-
-        <h3 class="section-title">Lançamentos de lucro por origem</h3>
-        <DataTable :rows="liquidationSummary.distributions" :columns="liquidationColumns" row-key="sourceKey" :page-size="5">
-          <template #cell-reserveId="{ row }">{{ sourceLabel(row.reserveId) }}</template>
-          <template #cell-investedAmount="{ row }">{{ formatMoney(row.investedAmount) }}</template>
-          <template #cell-proportion="{ row }">{{ (row.proportion * 100).toFixed(2) }}%</template>
-          <template #cell-profitShare="{ row }">
-            <span :style="{ color: row.profitShare > 0 ? 'var(--success)' : 'var(--muted)' }">
-              {{ formatMoney(row.profitShare) }}
-            </span>
-          </template>
-        </DataTable>
-
-        <p v-if="liquidationSummary.profit <= 0" class="muted note">
-          Sem lucro positivo: nenhum lançamento de rendimento será criado. O principal investido volta ao saldo disponível ao remover os vínculos.
-        </p>
-        <p v-else class="muted note">
-          Total de lucro a lançar: <strong>{{ formatMoney(liquidationSummary.profit) }}</strong>
-        </p>
-
-        <div class="actions" style="margin-top: 1rem">
-          <button class="btn" type="button" :disabled="liquidating" @click="confirmLiquidation">
-            {{ liquidating ? 'Liquidando...' : 'Confirmar liquidação' }}
-          </button>
-          <button class="btn secondary" type="button" :disabled="liquidating" @click="showLiquidation = null">Cancelar</button>
-        </div>
-      </div>
-    </div>
+    <LiquidationModal
+      v-if="showLiquidation"
+      :investment="showLiquidation"
+      :reserves="reserves"
+      @close="showLiquidation = null"
+      @liquidated="onLiquidated"
+    />
   </div>
 </template>
 
@@ -663,34 +595,6 @@ onMounted(async () => {
   padding: 0;
   font: inherit;
   text-decoration: underline;
-}
-
-.summary-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-  gap: 0.75rem;
-  margin: 1rem 0;
-}
-
-.value-sm {
-  font-size: 1.05rem !important;
-}
-
-.profit {
-  color: var(--success);
-}
-
-.zero {
-  color: var(--muted);
-}
-
-.section-title {
-  margin: 0.5rem 0 0.75rem;
-  font-size: 1rem;
-}
-
-.note {
-  margin-top: 0.85rem;
 }
 
 @media (max-width: 700px) {

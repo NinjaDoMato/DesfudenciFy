@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { onMounted, reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref } from 'vue'
 import api from '@/api/client'
 import { formatMoney, type Entry, type EntryDestination, type Reserve } from '@/types'
+import { sumReservedAvailable } from '@/utils/totals'
 import MoneyInput from '@/components/MoneyInput.vue'
 import DataTable from '@/components/DataTable.vue'
 import IconButton from '@/components/IconButton.vue'
@@ -14,6 +15,8 @@ const reserves = ref<Reserve[]>([])
 const freeBalance = ref(0)
 const showEntry = ref(false)
 const showTransfer = ref(false)
+
+const saldoReservado = computed(() => sumReservedAvailable(reserves.value))
 
 const entryForm = reactive({
   amount: 0,
@@ -106,11 +109,21 @@ onMounted(async () => {
     <div class="page-header">
       <div>
         <h1>Extrato</h1>
-        <p class="muted">Saldo livre: <strong>{{ formatMoney(freeBalance) }}</strong></p>
+        <p class="muted">Lançamentos e transferências entre saldo livre e reservas.</p>
       </div>
       <div class="actions">
         <button class="btn" type="button" @click="showEntry = true">Novo lançamento</button>
         <button class="btn secondary" type="button" @click="showTransfer = true">Transferir</button>
+      </div>
+    </div>
+    <div class="grid grid-2">
+      <div class="kpi">
+        <div class="label">Saldo livre</div>
+        <div class="value">{{ formatMoney(freeBalance) }}</div>
+      </div>
+      <div class="kpi">
+        <div class="label">Saldo reservado</div>
+        <div class="value">{{ formatMoney(saldoReservado) }}</div>
       </div>
     </div>
     <div class="panel">

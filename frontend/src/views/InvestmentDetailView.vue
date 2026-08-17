@@ -5,6 +5,7 @@ import api from '@/api/client'
 import { formatMoney, type Investment, type Reserve } from '@/types'
 import MoneyInput from '@/components/MoneyInput.vue'
 import DataTable from '@/components/DataTable.vue'
+import LiquidationModal from '@/components/LiquidationModal.vue'
 import type { DataTableColumn } from '@/composables/useDataTable'
 import { useToastStore } from '@/stores/toast'
 
@@ -19,7 +20,7 @@ const investment = ref<Investment | null>(null)
 const reserves = ref<Reserve[]>([])
 const loading = ref(true)
 const currentAmount = ref(0)
-const liquidating = ref(false)
+const showLiquidation = ref(false)
 
 type SourceRow = { sourceKey: string; reserveId: string | null; amount: number }
 
@@ -77,19 +78,14 @@ async function updateAmount() {
   }
 }
 
-async function liquidate() {
-  if (!investment.value) return
-  if (!confirm('Liquidar este investimento? O lucro será rateado entre as origens.')) return
-  liquidating.value = true
-  try {
-    await api.post(`/investments/${investment.value.id}/liquidate`)
-    await load()
-    toast.success('Investimento liquidado.')
-  } catch (e) {
-    toastError(e, 'Erro ao liquidar')
-  } finally {
-    liquidating.value = false
-  }
+function openLiquidation() {
+  showLiquidation.value = true
+}
+
+function onLiquidated() {
+  showLiquidation.value = false
+  toast.success('Investimento liquidado.')
+  void load()
 }
 
 onMounted(load)
@@ -186,13 +182,21 @@ watch(investmentId, () => {
             <p class="muted">
               O lucro (valor atual − inicial) é rateado proporcionalmente entre as origens.
             </p>
-            <button class="btn" type="button" :disabled="liquidating" @click="liquidate">
-              {{ liquidating ? 'Liquidando...' : 'Liquidar investimento' }}
+            <button class="btn" type="button" @click="openLiquidation">
+              Liquidar investimento
             </button>
           </div>
         </div>
       </div>
     </template>
+
+    <LiquidationModal
+      v-if="showLiquidation && investment"
+      :investment="investment"
+      :reserves="reserves"
+      @close="showLiquidation = false"
+      @liquidated="onLiquidated"
+    />
   </div>
 </template>
 
