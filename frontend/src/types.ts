@@ -74,6 +74,8 @@ export interface Property {
   expenses: {
     id: string
     amount: number
+    expenseTypeId: string
+    expenseTypeName: string
     observation: string
     occurredAt: string
     entryId?: string | null
@@ -102,6 +104,13 @@ export interface InvestmentType {
 }
 
 export interface IncomeType {
+  id: string
+  name: string
+  description?: string | null
+  isActive: boolean
+}
+
+export interface PropertyExpenseType {
   id: string
   name: string
   description?: string | null

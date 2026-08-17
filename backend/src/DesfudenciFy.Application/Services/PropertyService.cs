@@ -25,6 +25,7 @@ public class PropertyService
         var properties = await _db.Properties
             .Include(p => p.Amortizations)
             .Include(p => p.Expenses)
+                .ThenInclude(e => e.ExpenseType)
             .Include(p => p.RentPayments)
             .OrderBy(p => p.Name)
             .ToListAsync(cancellationToken);
@@ -266,6 +267,10 @@ public class PropertyService
             throw new AppException("Informe a observação do gasto.");
         }
 
+        var expenseType = await _db.PropertyExpenseTypes
+            .FirstOrDefaultAsync(t => t.Id == request.ExpenseTypeId && t.IsActive, cancellationToken)
+            ?? throw new AppException("Tipo de custo inválido ou inativo.");
+
         Guid? entryId = null;
         if (request.DebitCash)
         {
@@ -292,6 +297,7 @@ public class PropertyService
         var expense = new PropertyExpense
         {
             PropertyId = property.Id,
+            ExpenseTypeId = expenseType.Id,
             Amount = request.Amount,
             Observation = request.Observation.Trim(),
             OccurredAt = request.OccurredAt?.ToUniversalTime() ?? DateTime.UtcNow,
@@ -300,7 +306,14 @@ public class PropertyService
         _db.Add(expense);
         await _db.SaveChangesAsync(cancellationToken);
 
-        return new PropertyExpenseDto(expense.Id, expense.Amount, expense.Observation, expense.OccurredAt, expense.EntryId);
+        return new PropertyExpenseDto(
+            expense.Id,
+            expense.Amount,
+            expenseType.Id,
+            expenseType.Name,
+            expense.Observation,
+            expense.OccurredAt,
+            expense.EntryId);
     }
 
     public async Task DeleteExpenseAsync(Guid propertyId, Guid expenseId, CancellationToken cancellationToken = default)
@@ -472,6 +485,7 @@ public class PropertyService
         await _db.Properties
             .Include(p => p.Amortizations)
             .Include(p => p.Expenses)
+                .ThenInclude(e => e.ExpenseType)
             .Include(p => p.RentPayments)
             .FirstOrDefaultAsync(p => p.Id == id, cancellationToken)
         ?? throw new NotFoundException("Imóvel não encontrado.");
@@ -507,7 +521,14 @@ public class PropertyService
                 .ToList(),
             property.Expenses
                 .OrderByDescending(e => e.OccurredAt)
-                .Select(e => new PropertyExpenseDto(e.Id, e.Amount, e.Observation, e.OccurredAt, e.EntryId))
+                .Select(e => new PropertyExpenseDto(
+                    e.Id,
+                    e.Amount,
+                    e.ExpenseTypeId,
+                    e.ExpenseType.Name,
+                    e.Observation,
+                    e.OccurredAt,
+                    e.EntryId))
                 .ToList(),
             property.RentPayments
                 .OrderByDescending(r => r.PaidAt)

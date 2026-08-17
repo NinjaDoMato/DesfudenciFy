@@ -50,6 +50,17 @@ public class IncomeTypeConfiguration : IEntityTypeConfiguration<IncomeType>
     }
 }
 
+public class PropertyExpenseTypeConfiguration : IEntityTypeConfiguration<PropertyExpenseType>
+{
+    public void Configure(EntityTypeBuilder<PropertyExpenseType> builder)
+    {
+        builder.ToTable("PropertyExpenseTypes");
+        builder.HasKey(x => x.Id);
+        builder.Property(x => x.Name).HasMaxLength(100).IsRequired();
+        builder.Property(x => x.Description).HasMaxLength(500);
+    }
+}
+
 public class ReserveConfiguration : IEntityTypeConfiguration<Reserve>
 {
     public void Configure(EntityTypeBuilder<Reserve> builder)
@@ -168,6 +179,10 @@ public class PropertyExpenseConfiguration : IEntityTypeConfiguration<PropertyExp
             .WithMany(x => x.Expenses)
             .HasForeignKey(x => x.PropertyId)
             .OnDelete(DeleteBehavior.Cascade);
+        builder.HasOne(x => x.ExpenseType)
+            .WithMany(x => x.Expenses)
+            .HasForeignKey(x => x.ExpenseTypeId)
+            .OnDelete(DeleteBehavior.Restrict);
         builder.HasOne(x => x.Entry)
             .WithMany()
             .HasForeignKey(x => x.EntryId)

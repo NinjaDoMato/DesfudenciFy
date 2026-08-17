@@ -15,6 +15,7 @@ defineProps<{
     | 'purchases'
     | 'users'
     | 'investment-types'
+    | 'cost-types'
     | 'bank-accounts'
     | 'logout'
 }>()
@@ -98,6 +99,11 @@ defineProps<{
       <path d="M12 12 4 8" />
       <path d="M12 12v9" />
       <path d="M12 12 20 8" />
+    </template>
+    <template v-else-if="name === 'cost-types'">
+      <path d="M12 3 4.5 7v5.8c0 4.2 3 8.1 7.5 9.2 4.5-1.1 7.5-5 7.5-9.2V7L12 3Z" />
+      <path d="M9.5 12h5" />
+      <path d="M9.5 15h3.5" />
     </template>
     <template v-else-if="name === 'bank-accounts'">
       <path d="M3 10.5 12 4l9 6.5" />

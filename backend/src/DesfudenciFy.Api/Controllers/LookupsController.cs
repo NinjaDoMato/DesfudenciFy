@@ -13,15 +13,18 @@ public class LookupsController : ControllerBase
     private readonly BankAccountService _bankAccounts;
     private readonly InvestmentTypeService _investmentTypes;
     private readonly IncomeTypeService _incomeTypes;
+    private readonly PropertyExpenseTypeService _expenseTypes;
 
     public LookupsController(
         BankAccountService bankAccounts,
         InvestmentTypeService investmentTypes,
-        IncomeTypeService incomeTypes)
+        IncomeTypeService incomeTypes,
+        PropertyExpenseTypeService expenseTypes)
     {
         _bankAccounts = bankAccounts;
         _investmentTypes = investmentTypes;
         _incomeTypes = incomeTypes;
+        _expenseTypes = expenseTypes;
     }
 
     [HttpGet("bank-accounts")]
@@ -36,6 +39,13 @@ public class LookupsController : ControllerBase
     public async Task<IReadOnlyList<IncomeTypeDto>> IncomeTypes(CancellationToken cancellationToken)
     {
         var types = await _incomeTypes.ListAsync(cancellationToken);
+        return types.Where(t => t.IsActive).ToList();
+    }
+
+    [HttpGet("property-expense-types")]
+    public async Task<IReadOnlyList<PropertyExpenseTypeDto>> PropertyExpenseTypes(CancellationToken cancellationToken)
+    {
+        var types = await _expenseTypes.ListAsync(cancellationToken);
         return types.Where(t => t.IsActive).ToList();
     }
 }

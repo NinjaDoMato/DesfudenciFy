@@ -13,6 +13,7 @@ public static class ApplicationServiceCollectionExtensions
         services.AddScoped<BankAccountService>();
         services.AddScoped<InvestmentTypeService>();
         services.AddScoped<IncomeTypeService>();
+        services.AddScoped<PropertyExpenseTypeService>();
         services.AddScoped<ReserveService>();
         services.AddScoped<EntryService>();
         services.AddScoped<InvestmentService>();

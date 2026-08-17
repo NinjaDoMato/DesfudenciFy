@@ -1,13 +1,39 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { Doughnut, Line } from 'vue-chartjs'
+import {
+  ArcElement,
+  CategoryScale,
+  Chart as ChartJS,
+  Filler,
+  Legend,
+  LinearScale,
+  LineController,
+  LineElement,
+  PointElement,
+  Tooltip,
+} from 'chart.js'
 import api from '@/api/client'
-import { formatMoney, type EntryDestination, type Property, type Reserve } from '@/types'
+import { formatMoney, type EntryDestination, type Property, type PropertyExpenseType, type Reserve } from '@/types'
 import MoneyInput from '@/components/MoneyInput.vue'
 import DataTable from '@/components/DataTable.vue'
 import IconButton from '@/components/IconButton.vue'
 import type { DataTableColumn } from '@/composables/useDataTable'
+import { useThemeStore } from '@/stores/theme'
 import { useToastStore } from '@/stores/toast'
+
+ChartJS.register(
+  ArcElement,
+  CategoryScale,
+  Filler,
+  Legend,
+  LinearScale,
+  LineController,
+  LineElement,
+  PointElement,
+  Tooltip,
+)
 
 type PropertyAmortization = Property['amortizations'][number]
 type PropertyExpense = Property['expenses'][number]
@@ -15,13 +41,27 @@ type PropertyRentPayment = Property['rentPayments'][number]
 type DetailTab = 'amortization' | 'rent' | 'costs'
 type Tone = 'tone-success' | 'tone-danger' | 'tone-warning' | ''
 
+interface CostSlice {
+  name: string
+  value: number
+}
+
+interface DebtPoint {
+  label: string
+  balance: number
+}
+
+const DONUT_COLORS = ['#38bdf8', '#4ade80', '#a855f7', '#fb7185', '#f59e0b', '#14b8a6', '#3b82f6']
+
 const route = useRoute()
 const router = useRouter()
+const theme = useThemeStore()
 const toast = useToastStore()
 const propertyId = computed(() => String(route.params.id))
 
 const property = ref<Property | null>(null)
 const reserves = ref<Reserve[]>([])
+const expenseTypes = ref<PropertyExpenseType[]>([])
 const loading = ref(true)
 const activeTab = ref<DetailTab>('amortization')
 const photoFile = ref<File | null>(null)
@@ -51,6 +91,7 @@ const amortForm = reactive({
 
 const expenseForm = reactive({
   amount: 0,
+  expenseTypeId: '',
   observation: '',
   debitCash: false,
   cashDestination: 'FreeBalance' as EntryDestination,
@@ -73,6 +114,7 @@ const amortizationColumns: DataTableColumn<PropertyAmortization>[] = [
 
 const expenseColumns: DataTableColumn<PropertyExpense>[] = [
   { key: 'occurredAt', label: 'Data', sortValue: (row) => new Date(row.occurredAt) },
+  { key: 'expenseTypeName', label: 'Tipo', sortValue: (row) => row.expenseTypeName },
   { key: 'amount', label: 'Valor', sortValue: (row) => row.amount },
   { key: 'observation', label: 'Obs.', sortValue: (row) => row.observation },
   { key: 'actions', label: '', sortable: false },
@@ -122,6 +164,149 @@ const appraisedTone = computed<Tone>(() => {
   if (appraised < costFloor) return 'tone-danger'
   if (appraised > financing) return 'tone-success'
   return ''
+})
+
+const defaultExpenseTypeId = computed(() => {
+  const services = expenseTypes.value.find((type) => type.name === 'Serviços')
+  return services?.id ?? expenseTypes.value[0]?.id ?? ''
+})
+
+const costSlices = computed<CostSlice[]>(() => {
+  if (!property.value) return []
+
+  const slices: CostSlice[] = []
+  if (property.value.initialFinancingAmount > 0) {
+    slices.push({ name: 'Financiamento', value: property.value.initialFinancingAmount })
+  }
+
+  const totalsByType = new Map<string, number>()
+  for (const expense of property.value.expenses) {
+    const current = totalsByType.get(expense.expenseTypeName) ?? 0
+    totalsByType.set(expense.expenseTypeName, current + expense.amount)
+  }
+
+  const typeSlices = [...totalsByType.entries()]
+    .filter(([, value]) => value > 0)
+    .sort((a, b) => a[0].localeCompare(b[0], 'pt-BR'))
+    .map(([name, value]) => ({ name, value }))
+
+  return [...slices, ...typeSlices]
+})
+
+const debtLinePoints = computed<DebtPoint[]>(() => {
+  if (!property.value) return []
+
+  const amortizations = [...property.value.amortizations].sort((a, b) => {
+    const byDate = new Date(a.paidAt).getTime() - new Date(b.paidAt).getTime()
+    if (byDate !== 0) return byDate
+    return a.id.localeCompare(b.id)
+  })
+  if (amortizations.length === 0) return []
+
+  const amortizedTotal = amortizations.reduce((sum, item) => sum + item.amount, 0)
+  let balance = Math.round((property.value.remainingBalance + amortizedTotal) * 100) / 100
+  const points: DebtPoint[] = [{ label: 'Início', balance }]
+
+  for (const item of amortizations) {
+    balance = Math.max(0, Math.round((balance - item.amount) * 100) / 100)
+    points.push({
+      label: new Date(item.paidAt).toLocaleDateString('pt-BR'),
+      balance,
+    })
+  }
+
+  const last = points[points.length - 1]
+  if (last && Math.abs(last.balance - property.value.remainingBalance) > 0.005) {
+    points.push({ label: 'Atual', balance: property.value.remainingBalance })
+  }
+
+  return points
+})
+
+function cssVar(name: string, fallback: string) {
+  void theme.mode
+  const value = getComputedStyle(document.documentElement).getPropertyValue(name).trim()
+  return value || fallback
+}
+
+const costDoughnutData = computed(() => ({
+  labels: costSlices.value.map((slice) => slice.name),
+  datasets: [{
+    data: costSlices.value.map((slice) => slice.value),
+    backgroundColor: costSlices.value.map((_, index) => DONUT_COLORS[index % DONUT_COLORS.length]),
+    borderWidth: 0,
+  }],
+}))
+
+const costDoughnutOptions = computed(() => ({
+  responsive: true,
+  maintainAspectRatio: false,
+  cutout: '62%',
+  plugins: {
+    legend: {
+      position: 'bottom' as const,
+      labels: { color: cssVar('--chart-muted', '#8a8aa0'), boxWidth: 12, padding: 12 },
+    },
+    tooltip: {
+      callbacks: {
+        label(context: { label?: string; parsed: number }) {
+          const label = context.label || ''
+          return `${label}: ${formatMoney(context.parsed)}`
+        },
+      },
+    },
+  },
+}))
+
+const debtLineData = computed(() => ({
+  labels: debtLinePoints.value.map((point) => point.label),
+  datasets: [{
+    label: 'Saldo restante',
+    data: debtLinePoints.value.map((point) => point.balance),
+    borderColor: cssVar('--accent', '#38bdf8'),
+    backgroundColor: cssVar('--accent-soft', 'rgba(56, 189, 248, 0.18)'),
+    fill: true,
+    tension: 0.25,
+    pointRadius: 3,
+    pointHoverRadius: 5,
+    pointBackgroundColor: cssVar('--accent', '#38bdf8'),
+    borderWidth: 2,
+  }],
+}))
+
+const debtLineOptions = computed(() => {
+  const muted = cssVar('--chart-muted', '#8a8aa0')
+  const grid = cssVar('--chart-grid', 'rgba(255,255,255,0.06)')
+  return {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        callbacks: {
+          label(context: { parsed: { y: number | null } }) {
+            return formatMoney(context.parsed.y ?? 0)
+          },
+        },
+      },
+    },
+    scales: {
+      x: {
+        ticks: { color: muted, maxRotation: 0, autoSkip: true },
+        grid: { display: false },
+      },
+      y: {
+        beginAtZero: true,
+        ticks: {
+          color: muted,
+          callback(value: string | number) {
+            return formatMoney(Number(value))
+          },
+        },
+        grid: { color: grid },
+      },
+    },
+  }
 })
 
 function syncFormFromProperty(item: Property) {
@@ -184,12 +369,17 @@ function toastError(e: unknown, fallback: string) {
 async function load() {
   loading.value = true
   try {
-    const [propertyRes, reservesRes] = await Promise.all([
+    const [propertyRes, reservesRes, typesRes] = await Promise.all([
       api.get<Property>(`/properties/${propertyId.value}`),
       api.get<Reserve[]>('/reserves'),
+      api.get<PropertyExpenseType[]>('/lookups/property-expense-types'),
     ])
     property.value = propertyRes.data
     reserves.value = reservesRes.data
+    expenseTypes.value = typesRes.data
+    if (!expenseForm.expenseTypeId) {
+      expenseForm.expenseTypeId = defaultExpenseTypeId.value
+    }
     syncFormFromProperty(propertyRes.data)
     if (propertyRes.data.isRented && !Number(rentForm.amount)) {
       rentForm.amount = propertyRes.data.rentalAmount
@@ -272,6 +462,7 @@ async function addExpense() {
   try {
     await api.post(`/properties/${propertyId.value}/expenses`, {
       amount: Number(expenseForm.amount),
+      expenseTypeId: expenseForm.expenseTypeId,
       observation: expenseForm.observation,
       debitCash: expenseForm.debitCash,
       cashDestination: expenseForm.debitCash ? expenseForm.cashDestination : null,
@@ -279,6 +470,7 @@ async function addExpense() {
     })
     Object.assign(expenseForm, {
       amount: 0,
+      expenseTypeId: defaultExpenseTypeId.value,
       observation: '',
       debitCash: false,
       cashDestination: 'FreeBalance',
@@ -411,54 +603,71 @@ watch(
         <div class="side-stack">
           <div class="panel">
             <h2>Totalizadores</h2>
+            <div class="totals-body">
+              <div class="totals-kpis">
+                <div class="kpi-group">
+                  <h3 class="kpi-group-title">Resultado</h3>
+                  <div class="kpi-row">
+                    <div class="kpi">
+                      <div class="label">Valor avaliado</div>
+                      <div class="value" :class="appraisedTone">{{ formatMoney(property.appraisedValue) }}</div>
+                    </div>
+                    <div class="kpi">
+                      <div class="label">Custo do imóvel</div>
+                      <div class="value">{{ formatMoney(property.propertyCost) }}</div>
+                    </div>
+                    <div class="kpi">
+                      <div class="label">Retorno</div>
+                      <div class="value" :class="returnTone">{{ formatMoney(property.propertyReturn) }}</div>
+                    </div>
+                  </div>
+                </div>
 
-            <div class="kpi-group">
-              <h3 class="kpi-group-title">Resultado</h3>
-              <div class="kpi-row">
-                <div class="kpi">
-                  <div class="label">Valor avaliado</div>
-                  <div class="value" :class="appraisedTone">{{ formatMoney(property.appraisedValue) }}</div>
+                <div class="kpi-group">
+                  <h3 class="kpi-group-title">Movimentações</h3>
+                  <div class="kpi-row">
+                    <div class="kpi">
+                      <div class="label">Total de gastos</div>
+                      <div class="value" :class="expensesTone">{{ formatMoney(property.totalExpenses) }}</div>
+                    </div>
+                    <div class="kpi">
+                      <div class="label">Aluguéis pagos</div>
+                      <div class="value" :class="rentTone">{{ formatMoney(property.totalRentPaid) }}</div>
+                    </div>
+                  </div>
                 </div>
-                <div class="kpi">
-                  <div class="label">Custo do imóvel</div>
-                  <div class="value">{{ formatMoney(property.propertyCost) }}</div>
+
+                <div class="kpi-group">
+                  <h3 class="kpi-group-title">Financiamento</h3>
+                  <div class="kpi-row">
+                    <div class="kpi">
+                      <div class="label">Financiamento inicial</div>
+                      <div class="value">{{ formatMoney(property.initialFinancingAmount) }}</div>
+                    </div>
+                    <div class="kpi">
+                      <div class="label">Parcela</div>
+                      <div class="value">{{ formatMoney(property.installmentAmount) }}</div>
+                    </div>
+                    <div class="kpi">
+                      <div class="label">Restante</div>
+                      <div class="value">{{ formatMoney(property.remainingBalance) }}</div>
+                    </div>
+                  </div>
                 </div>
-                <div class="kpi">
-                  <div class="label">Retorno</div>
-                  <div class="value" :class="returnTone">{{ formatMoney(property.propertyReturn) }}</div>
+              </div>
+
+              <div v-if="costSlices.length" class="cost-chart">
+                <h3 class="kpi-group-title">Composição do custo</h3>
+                <div class="chart-frame-doughnut">
+                  <Doughnut :data="costDoughnutData" :options="costDoughnutOptions" />
                 </div>
               </div>
             </div>
 
-            <div class="kpi-group">
-              <h3 class="kpi-group-title">Movimentações</h3>
-              <div class="kpi-row">
-                <div class="kpi">
-                  <div class="label">Total de gastos</div>
-                  <div class="value" :class="expensesTone">{{ formatMoney(property.totalExpenses) }}</div>
-                </div>
-                <div class="kpi">
-                  <div class="label">Aluguéis pagos</div>
-                  <div class="value" :class="rentTone">{{ formatMoney(property.totalRentPaid) }}</div>
-                </div>
-              </div>
-            </div>
-
-            <div class="kpi-group">
-              <h3 class="kpi-group-title">Financiamento</h3>
-              <div class="kpi-row">
-                <div class="kpi">
-                  <div class="label">Financiamento inicial</div>
-                  <div class="value">{{ formatMoney(property.initialFinancingAmount) }}</div>
-                </div>
-                <div class="kpi">
-                  <div class="label">Parcela</div>
-                  <div class="value">{{ formatMoney(property.installmentAmount) }}</div>
-                </div>
-                <div class="kpi">
-                  <div class="label">Restante</div>
-                  <div class="value">{{ formatMoney(property.remainingBalance) }}</div>
-                </div>
+            <div v-if="debtLinePoints.length" class="debt-chart">
+              <h3 class="kpi-group-title">Evolução da dívida</h3>
+              <div class="chart-frame-line">
+                <Line :data="debtLineData" :options="debtLineOptions" />
               </div>
             </div>
           </div>
@@ -594,6 +803,13 @@ watch(
                 <h3>Registrar gasto</h3>
                 <div class="field"><label>Valor</label><MoneyInput v-model="expenseForm.amount" required /></div>
                 <div class="field">
+                  <label>Tipo</label>
+                  <select v-model="expenseForm.expenseTypeId" required>
+                    <option disabled value="">Selecione</option>
+                    <option v-for="type in expenseTypes" :key="type.id" :value="type.id">{{ type.name }}</option>
+                  </select>
+                </div>
+                <div class="field">
                   <label>Observação</label>
                   <input v-model="expenseForm.observation" required placeholder="Ex.: Contratado eletricista" />
                 </div>
@@ -630,6 +846,7 @@ watch(
                   empty-text="Nenhum gasto registrado."
                 >
                   <template #cell-occurredAt="{ row }">{{ new Date(row.occurredAt).toLocaleDateString('pt-BR') }}</template>
+                  <template #cell-expenseTypeName="{ row }">{{ row.expenseTypeName }}</template>
                   <template #cell-amount="{ row }">{{ formatMoney(row.amount) }}</template>
                   <template #cell-actions="{ row }">
                     <IconButton label="Excluir" icon="delete" variant="danger" @click="removeExpense(row.id)" />
@@ -672,6 +889,46 @@ watch(
   display: flex;
   flex-direction: column;
   gap: 0.65rem;
+}
+
+.totals-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(220px, 280px);
+  gap: 1.25rem;
+  align-items: start;
+}
+
+.totals-kpis {
+  min-width: 0;
+}
+
+.cost-chart {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  min-width: 0;
+}
+
+.chart-frame-doughnut {
+  position: relative;
+  height: 240px;
+  width: 100%;
+}
+
+.debt-chart {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  min-width: 0;
+  margin-top: 1.1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border);
+}
+
+.chart-frame-line {
+  position: relative;
+  height: 220px;
+  width: 100%;
 }
 
 .kpi-group + .kpi-group {
@@ -835,6 +1092,15 @@ watch(
 @media (max-width: 1000px) {
   .detail-layout {
     grid-template-columns: 1fr;
+  }
+
+  .totals-body {
+    grid-template-columns: 1fr;
+  }
+
+  .chart-frame-doughnut {
+    max-width: 280px;
+    margin: 0 auto;
   }
 }
 </style>

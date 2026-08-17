@@ -120,6 +120,8 @@ public record PropertyAmortizationDto(
 public record PropertyExpenseDto(
     Guid Id,
     decimal Amount,
+    Guid ExpenseTypeId,
+    string ExpenseTypeName,
     string Observation,
     DateTime OccurredAt,
     Guid? EntryId);
@@ -163,6 +165,7 @@ public record CreateAmortizationRequest(
 
 public record CreatePropertyExpenseRequest(
     decimal Amount,
+    Guid ExpenseTypeId,
     string Observation,
     DateTime? OccurredAt,
     bool DebitCash,
@@ -193,6 +196,9 @@ public record CreateCostPaymentRequest(decimal PaidAmount, DateTime? DatePaid);
 
 public record IncomeTypeDto(Guid Id, string Name, string? Description, bool IsActive);
 public record UpsertIncomeTypeRequest(string Name, string? Description, bool IsActive);
+
+public record PropertyExpenseTypeDto(Guid Id, string Name, string? Description, bool IsActive);
+public record UpsertPropertyExpenseTypeRequest(string Name, string? Description, bool IsActive);
 
 public record IncomeSourceDto(
     Guid Id,

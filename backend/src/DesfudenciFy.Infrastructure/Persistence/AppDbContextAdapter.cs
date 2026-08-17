@@ -17,6 +17,7 @@ public class AppDbContextAdapter : IAppDbContext
     public IQueryable<BankAccount> BankAccounts => _db.BankAccounts;
     public IQueryable<InvestmentType> InvestmentTypes => _db.InvestmentTypes;
     public IQueryable<IncomeType> IncomeTypes => _db.IncomeTypes;
+    public IQueryable<PropertyExpenseType> PropertyExpenseTypes => _db.PropertyExpenseTypes;
     public IQueryable<Reserve> Reserves => _db.Reserves;
     public IQueryable<Entry> Entries => _db.Entries;
     public IQueryable<Investment> Investments => _db.Investments;

@@ -165,6 +165,7 @@ internal sealed class MigrationRunner
                 "BankAccounts",
                 "InvestmentTypes",
                 "IncomeTypes",
+                "PropertyExpenseTypes",
                 "Users"
             RESTART IDENTITY CASCADE;
             """,
@@ -240,6 +241,19 @@ internal sealed class MigrationRunner
         }
 
         plan.DefaultIncomeTypeId = plan.IncomeTypes.First(t => t.Name == "Renda extra").Id;
+
+        foreach (var seedName in new[] { "Leilão", "Material", "Serviços", "Documentação" })
+        {
+            plan.PropertyExpenseTypes.Add(new PropertyExpenseType
+            {
+                Id = LegacyMappings.StableGuid("PropertyExpenseType:" + seedName),
+                Name = seedName,
+                Description = "Tipo padrão (seed do migrator).",
+                IsActive = true,
+                DateCreated = DateTime.UtcNow,
+                LastUpdate = null
+            });
+        }
 
         var bankIdByLegacyAccount = accountIdsUsed.ToDictionary(
             account => account,
@@ -544,6 +558,7 @@ internal sealed class MigrationRunner
         db.BankAccounts.AddRange(plan.BankAccounts);
         db.InvestmentTypes.AddRange(plan.InvestmentTypes);
         db.IncomeTypes.AddRange(plan.IncomeTypes);
+        db.PropertyExpenseTypes.AddRange(plan.PropertyExpenseTypes);
         db.Reserves.AddRange(plan.Reserves);
         await db.SaveChangesAsync(cancellationToken);
 
@@ -624,6 +639,7 @@ internal sealed class MigrationRunner
         Console.WriteLine($"  BankAccounts       : {plan.BankAccounts.Count}");
         Console.WriteLine($"  InvestmentTypes    : {plan.InvestmentTypes.Count}");
         Console.WriteLine($"  IncomeTypes        : {plan.IncomeTypes.Count}");
+        Console.WriteLine($"  PropertyExpenseTypes: {plan.PropertyExpenseTypes.Count}");
         Console.WriteLine($"  Reserves           : {plan.Reserves.Count}");
         Console.WriteLine($"  Entries            : {plan.Entries.Count}");
         Console.WriteLine($"  Investments        : {plan.Investments.Count}");
@@ -659,6 +675,7 @@ internal sealed class MigrationRunner
         public List<BankAccount> BankAccounts { get; } = [];
         public List<InvestmentType> InvestmentTypes { get; } = [];
         public List<IncomeType> IncomeTypes { get; } = [];
+        public List<PropertyExpenseType> PropertyExpenseTypes { get; } = [];
         public Guid DefaultIncomeTypeId { get; set; }
         public List<Reserve> Reserves { get; } = [];
         public List<Entry> Entries { get; } = [];

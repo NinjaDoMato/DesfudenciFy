@@ -17,6 +17,7 @@ internal sealed class TargetDbContext : DbContext
     public DbSet<BankAccount> BankAccounts => Set<BankAccount>();
     public DbSet<InvestmentType> InvestmentTypes => Set<InvestmentType>();
     public DbSet<IncomeType> IncomeTypes => Set<IncomeType>();
+    public DbSet<PropertyExpenseType> PropertyExpenseTypes => Set<PropertyExpenseType>();
     public DbSet<Reserve> Reserves => Set<Reserve>();
     public DbSet<Entry> Entries => Set<Entry>();
     public DbSet<Investment> Investments => Set<Investment>();

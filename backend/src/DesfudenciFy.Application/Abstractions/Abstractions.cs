@@ -8,6 +8,7 @@ public interface IAppDbContext
     IQueryable<BankAccount> BankAccounts { get; }
     IQueryable<InvestmentType> InvestmentTypes { get; }
     IQueryable<IncomeType> IncomeTypes { get; }
+    IQueryable<PropertyExpenseType> PropertyExpenseTypes { get; }
     IQueryable<Reserve> Reserves { get; }
     IQueryable<Entry> Entries { get; }
     IQueryable<Investment> Investments { get; }

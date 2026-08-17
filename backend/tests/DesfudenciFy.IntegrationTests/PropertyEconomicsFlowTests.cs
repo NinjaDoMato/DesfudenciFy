@@ -184,8 +184,10 @@ public class PropertyEconomicsFlowTests
 
         Assert.Equal(200_000m, property.PropertyCost);
 
+        var expenseType = await fx.Db.PropertyExpenseTypes.SingleAsync(t => t.Name == "Serviços");
         var expense = await fx.Properties.AddExpenseAsync(property.Id, new CreatePropertyExpenseRequest(
             1_500m,
+            expenseType.Id,
             "Contratado eletricista",
             null,
             true,
@@ -193,6 +195,8 @@ public class PropertyEconomicsFlowTests
             null));
 
         Assert.Equal(1_500m, expense.Amount);
+        Assert.Equal(expenseType.Id, expense.ExpenseTypeId);
+        Assert.Equal("Serviços", expense.ExpenseTypeName);
         Assert.NotNull(expense.EntryId);
 
         var updated = await fx.Properties.GetAsync(property.Id);
@@ -272,5 +276,42 @@ public class PropertyEconomicsFlowTests
         Assert.Contains("Salário", names);
         Assert.Contains("Vale Alimentação", names);
         Assert.Contains("Vale Refeição", names);
+    }
+
+    [Fact]
+    public async Task Seeded_property_expense_types_should_include_defaults()
+    {
+        await using var fx = new TestDbFixture();
+        var names = await fx.Db.PropertyExpenseTypes.Select(t => t.Name).OrderBy(n => n).ToListAsync();
+
+        Assert.Equal(["Documentação", "Leilão", "Material", "Serviços"], names);
+    }
+
+    [Fact]
+    public async Task Add_expense_should_require_expense_type()
+    {
+        await using var fx = new TestDbFixture();
+
+        var property = await fx.Properties.CreateAsync(new CreatePropertyRequest(
+            "Casa Azul",
+            "Rua H",
+            300_000m,
+            0m,
+            180_000m,
+            0m,
+            0,
+            0m));
+
+        var exception = await Assert.ThrowsAsync<AppException>(() =>
+            fx.Properties.AddExpenseAsync(property.Id, new CreatePropertyExpenseRequest(
+                500m,
+                Guid.NewGuid(),
+                "Pintura",
+                null,
+                false,
+                null,
+                null)));
+
+        Assert.Equal("Tipo de custo inválido ou inativo.", exception.Message);
     }
 }

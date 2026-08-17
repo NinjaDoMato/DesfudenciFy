@@ -107,5 +107,25 @@ public static class InfrastructureServiceCollectionExtensions
                 await db.SaveChangesAsync();
             }
         }
+
+        var expenseTypeDefaults = new[] { "Leilão", "Material", "Serviços", "Documentação" };
+        if (!await db.PropertyExpenseTypes.AnyAsync())
+        {
+            db.PropertyExpenseTypes.AddRange(expenseTypeDefaults.Select(name => new PropertyExpenseType { Name = name }));
+            await db.SaveChangesAsync();
+        }
+        else
+        {
+            var existingNames = await db.PropertyExpenseTypes.Select(t => t.Name).ToListAsync();
+            foreach (var name in expenseTypeDefaults.Where(n => !existingNames.Contains(n)))
+            {
+                db.PropertyExpenseTypes.Add(new PropertyExpenseType { Name = name });
+            }
+
+            if (db.ChangeTracker.HasChanges())
+            {
+                await db.SaveChangesAsync();
+            }
+        }
     }
 }

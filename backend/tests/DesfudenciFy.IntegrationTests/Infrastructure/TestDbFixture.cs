@@ -39,10 +39,10 @@ public sealed class TestDbFixture : IAsyncDisposable
         Purchases = new PurchaseService(AppDb);
         IncomeSources = new IncomeSourceService(AppDb);
 
-        SeedIncomeTypes();
+        SeedCatalogTypes();
     }
 
-    private void SeedIncomeTypes()
+    private void SeedCatalogTypes()
     {
         Db.IncomeTypes.AddRange(
             new IncomeType { Name = "Salário", IsActive = true },
@@ -50,6 +50,11 @@ public sealed class TestDbFixture : IAsyncDisposable
             new IncomeType { Name = "Vale Alimentação", IsActive = true },
             new IncomeType { Name = "Aluguel", IsActive = true },
             new IncomeType { Name = "Renda extra", IsActive = true });
+        Db.PropertyExpenseTypes.AddRange(
+            new PropertyExpenseType { Name = "Leilão", IsActive = true },
+            new PropertyExpenseType { Name = "Material", IsActive = true },
+            new PropertyExpenseType { Name = "Serviços", IsActive = true },
+            new PropertyExpenseType { Name = "Documentação", IsActive = true });
         Db.SaveChanges();
     }
 

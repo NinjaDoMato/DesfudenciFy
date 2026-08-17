@@ -21,7 +21,8 @@ const isAdminRoute = computed(() => route.path.startsWith('/admin'))
 const isSettingsRoute = computed(() =>
   route.path.startsWith('/admin/bank-accounts') ||
   route.path.startsWith('/admin/investment-types') ||
-  route.path.startsWith('/admin/income-types'),
+  route.path.startsWith('/admin/income-types') ||
+  route.path.startsWith('/admin/cost-types'),
 )
 
 watch(
@@ -162,6 +163,10 @@ async function onLogout() {
                 <RouterLink class="nav-link nested" to="/admin/income-types">
                   <NavIcon name="income" />
                   <span>Tipos de Entrada</span>
+                </RouterLink>
+                <RouterLink class="nav-link nested" to="/admin/cost-types">
+                  <NavIcon name="cost-types" />
+                  <span>Tipos de Custo</span>
                 </RouterLink>
                 <RouterLink class="nav-link nested" to="/admin/bank-accounts">
                   <NavIcon name="bank-accounts" />
