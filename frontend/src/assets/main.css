@@ -87,6 +87,7 @@ h1, h2, h3 {
   display: flex;
   flex-direction: column;
   gap: 1.25rem;
+  min-width: 0;
 }
 
 .page-header {
@@ -110,6 +111,7 @@ h1, h2, h3 {
   border-radius: var(--radius);
   padding: 1.35rem;
   box-shadow: var(--shadow);
+  min-width: 0;
 }
 
 .panel h2 {
@@ -120,32 +122,19 @@ h1, h2, h3 {
 .grid {
   display: grid;
   gap: 1rem;
+  min-width: 0;
 }
 
-.grid-2 { grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
-.grid-4 { grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); }
+.grid-2 { grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr)); }
+.grid-4 { grid-template-columns: repeat(auto-fit, minmax(min(100%, 180px), 1fr)); }
 .grid-totals {
   align-items: stretch;
-  grid-template-columns: repeat(3, minmax(0, 1fr)) minmax(15.5rem, 1.5fr);
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr));
 }
 
 .grid-totals-lead {
   align-items: stretch;
-  grid-template-columns: repeat(3, minmax(15.5rem, 1fr));
-}
-
-@media (max-width: 960px) {
-  .grid-totals,
-  .grid-totals-lead {
-    grid-template-columns: 1fr 1fr;
-  }
-}
-
-@media (max-width: 560px) {
-  .grid-totals,
-  .grid-totals-lead {
-    grid-template-columns: 1fr;
-  }
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 20rem), 1fr));
 }
 
 .btn {
@@ -248,6 +237,8 @@ th {
   background: var(--bg-elevated);
   border: 1px solid var(--border);
   box-shadow: var(--shadow);
+  min-width: 0;
+  container-type: inline-size;
 }
 
 .kpi .label {
@@ -257,9 +248,11 @@ th {
 
 .kpi .value {
   font-size: 1.4rem;
+  font-size: clamp(1.05rem, 2.2cqi, 1.4rem);
   font-weight: 700;
   margin-top: 0.35rem;
   letter-spacing: -0.02em;
+  overflow-wrap: anywhere;
 }
 
 .kpi .value.positive {
@@ -272,6 +265,7 @@ th {
 
 .kpi-body {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 0.75rem 1rem;
   margin-top: 0.35rem;
@@ -280,7 +274,8 @@ th {
 
 .kpi-body .value {
   margin-top: 0;
-  flex: 0 0 auto;
+  flex: 1 1 auto;
+  min-width: min(100%, 8rem);
 }
 
 .kpi-break {
@@ -290,7 +285,7 @@ th {
   gap: 0.12rem;
   margin-top: 0;
   min-width: 0;
-  flex: 1 1 7.5rem;
+  flex: 1 1 9rem;
   padding-left: 0.85rem;
   border-left: 1px solid var(--border);
   font-size: 0.75rem;
@@ -307,13 +302,37 @@ th {
 }
 
 .kpi-break-row span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .kpi-break strong {
   color: var(--text);
   font-weight: 600;
+  flex: 0 0 auto;
   white-space: nowrap;
+}
+
+@container (max-width: 20rem) {
+  .kpi-body {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.55rem;
+  }
+
+  .kpi-body .value {
+    min-width: 0;
+  }
+
+  .kpi-break {
+    flex: 1 1 auto;
+    padding-left: 0;
+    border-left: none;
+    padding-top: 0.5rem;
+    border-top: 1px solid var(--border);
+  }
 }
 
 .kpi-break-row strong.positive {

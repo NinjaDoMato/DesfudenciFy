@@ -1012,12 +1012,12 @@ watch(
 
 .kpi-row {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 140px), 1fr));
   gap: 0.75rem;
 }
 
 .kpi-row-primary {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 10rem), 1fr));
 }
 
 .kpi-row :deep(.kpi),
@@ -1174,7 +1174,7 @@ watch(
 }
 
 @media (max-width: 640px) {
-  .kpi-row-primary {
+  .kpi-row {
     grid-template-columns: 1fr;
   }
 }

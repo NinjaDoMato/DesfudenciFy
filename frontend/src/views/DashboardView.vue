@@ -374,6 +374,7 @@ onMounted(async () => {
 .charts-stack {
   display: grid;
   gap: 1rem;
+  min-width: 0;
 }
 
 .chart-main .chart-frame {
@@ -382,8 +383,9 @@ onMounted(async () => {
 
 .donuts-row {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr));
   gap: 1rem;
+  min-width: 0;
 }
 
 .chart-side {
@@ -404,10 +406,6 @@ onMounted(async () => {
 }
 
 @media (max-width: 640px) {
-  .donuts-row {
-    grid-template-columns: 1fr;
-  }
-
   .chart-frame-doughnut {
     max-width: 240px;
   }

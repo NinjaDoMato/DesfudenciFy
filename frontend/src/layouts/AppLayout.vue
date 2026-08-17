@@ -210,7 +210,7 @@ async function onLogout() {
 <style scoped>
 .shell {
   display: grid;
-  grid-template-columns: 280px 1fr;
+  grid-template-columns: 280px minmax(0, 1fr);
   height: 100vh;
   overflow: hidden;
 }
@@ -400,6 +400,7 @@ nav {
 .content {
   padding: 1.5rem;
   overflow-y: auto;
+  min-width: 0;
   min-height: 0;
   height: 100vh;
 }
@@ -423,6 +424,7 @@ nav {
   .content {
     height: auto;
     overflow: visible;
+    padding: 1rem;
   }
 }
 </style>
