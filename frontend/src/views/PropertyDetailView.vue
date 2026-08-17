@@ -601,28 +601,29 @@ watch(
         </form>
 
         <div class="side-stack">
-          <div class="panel">
+          <div class="panel overview-panel">
             <h2>Totalizadores</h2>
-            <div class="totals-body">
-              <div class="totals-kpis">
-                <div class="kpi-group">
-                  <h3 class="kpi-group-title">Resultado</h3>
-                  <div class="kpi-row">
-                    <div class="kpi">
-                      <div class="label">Valor avaliado</div>
-                      <div class="value" :class="appraisedTone">{{ formatMoney(property.appraisedValue) }}</div>
-                    </div>
-                    <div class="kpi">
-                      <div class="label">Custo do imóvel</div>
-                      <div class="value">{{ formatMoney(property.propertyCost) }}</div>
-                    </div>
-                    <div class="kpi">
-                      <div class="label">Retorno</div>
-                      <div class="value" :class="returnTone">{{ formatMoney(property.propertyReturn) }}</div>
-                    </div>
-                  </div>
-                </div>
 
+            <section class="overview-section">
+              <h3 class="kpi-group-title">Resultado</h3>
+              <div class="kpi-row kpi-row-primary">
+                <div class="kpi">
+                  <div class="label">Valor avaliado</div>
+                  <div class="value" :class="appraisedTone">{{ formatMoney(property.appraisedValue) }}</div>
+                </div>
+                <div class="kpi">
+                  <div class="label">Custo do imóvel</div>
+                  <div class="value">{{ formatMoney(property.propertyCost) }}</div>
+                </div>
+                <div class="kpi">
+                  <div class="label">Retorno</div>
+                  <div class="value" :class="returnTone">{{ formatMoney(property.propertyReturn) }}</div>
+                </div>
+              </div>
+            </section>
+
+            <section class="overview-section">
+              <div class="metrics-split">
                 <div class="kpi-group">
                   <h3 class="kpi-group-title">Movimentações</h3>
                   <div class="kpi-row">
@@ -636,7 +637,6 @@ watch(
                     </div>
                   </div>
                 </div>
-
                 <div class="kpi-group">
                   <h3 class="kpi-group-title">Financiamento</h3>
                   <div class="kpi-row">
@@ -655,21 +655,27 @@ watch(
                   </div>
                 </div>
               </div>
+            </section>
 
-              <div v-if="costSlices.length" class="cost-chart">
-                <h3 class="kpi-group-title">Composição do custo</h3>
-                <div class="chart-frame-doughnut">
-                  <Doughnut :data="costDoughnutData" :options="costDoughnutOptions" />
+            <section v-if="costSlices.length || debtLinePoints.length" class="overview-section charts-section">
+              <div
+                class="charts-row"
+                :class="{ 'charts-row-split': costSlices.length > 0 && debtLinePoints.length > 0 }"
+              >
+                <div v-if="costSlices.length" class="chart-card">
+                  <h3 class="kpi-group-title">Composição do custo</h3>
+                  <div class="chart-frame-doughnut">
+                    <Doughnut :data="costDoughnutData" :options="costDoughnutOptions" />
+                  </div>
+                </div>
+                <div v-if="debtLinePoints.length" class="chart-card">
+                  <h3 class="kpi-group-title">Evolução da dívida</h3>
+                  <div class="chart-frame-line">
+                    <Line :data="debtLineData" :options="debtLineOptions" />
+                  </div>
                 </div>
               </div>
-            </div>
-
-            <div v-if="debtLinePoints.length" class="debt-chart">
-              <h3 class="kpi-group-title">Evolução da dívida</h3>
-              <div class="chart-frame-line">
-                <Line :data="debtLineData" :options="debtLineOptions" />
-              </div>
-            </div>
+            </section>
           </div>
 
           <div class="panel tabs-panel">
@@ -885,24 +891,45 @@ watch(
   min-width: 0;
 }
 
+.overview-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.overview-section + .overview-section {
+  margin-top: 1.1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border);
+}
+
 .kpi-group {
   display: flex;
   flex-direction: column;
   gap: 0.65rem;
-}
-
-.totals-body {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(220px, 280px);
-  gap: 1.25rem;
-  align-items: start;
-}
-
-.totals-kpis {
   min-width: 0;
 }
 
-.cost-chart {
+.metrics-split {
+  display: grid;
+  grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr);
+  gap: 1rem;
+}
+
+.charts-row {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.1rem;
+  align-items: start;
+}
+
+.charts-row-split {
+  grid-template-columns: minmax(200px, 260px) minmax(0, 1fr);
+  gap: 1rem;
+  align-items: start;
+}
+
+.chart-card {
   display: flex;
   flex-direction: column;
   gap: 0.65rem;
@@ -911,30 +938,16 @@ watch(
 
 .chart-frame-doughnut {
   position: relative;
-  height: 240px;
+  height: 220px;
   width: 100%;
-}
-
-.debt-chart {
-  display: flex;
-  flex-direction: column;
-  gap: 0.65rem;
-  min-width: 0;
-  margin-top: 1.1rem;
-  padding-top: 1rem;
-  border-top: 1px solid var(--border);
+  max-width: 260px;
+  margin: 0 auto;
 }
 
 .chart-frame-line {
   position: relative;
   height: 220px;
   width: 100%;
-}
-
-.kpi-group + .kpi-group {
-  margin-top: 1.1rem;
-  padding-top: 1rem;
-  border-top: 1px solid var(--border);
 }
 
 .kpi-group-title {
@@ -948,14 +961,18 @@ watch(
 
 .kpi-row {
   display: grid;
-  grid-template-columns: repeat(auto-fill, 180px);
-  justify-content: start;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
   gap: 0.75rem;
+}
+
+.kpi-row-primary {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
 .kpi-row :deep(.kpi),
 .kpi {
-  width: 180px;
+  width: auto;
+  min-width: 0;
   box-sizing: border-box;
   overflow: hidden;
   padding: 0.95rem 1rem;
@@ -1094,13 +1111,20 @@ watch(
     grid-template-columns: 1fr;
   }
 
-  .totals-body {
+  .metrics-split {
     grid-template-columns: 1fr;
   }
+}
 
-  .chart-frame-doughnut {
-    max-width: 280px;
-    margin: 0 auto;
+@media (max-width: 720px) {
+  .charts-row-split {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .kpi-row-primary {
+    grid-template-columns: 1fr;
   }
 }
 </style>

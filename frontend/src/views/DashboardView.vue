@@ -43,6 +43,7 @@ interface UpcomingBill {
   name: string
   amount: number
   dueDate?: string | null
+  targetId?: string | null
 }
 
 interface DistributionItem {
@@ -181,7 +182,11 @@ function openInvestment(row: UpcomingInvestment) {
 
 function openBill(row: UpcomingBillRow) {
   if (row.kind === 'FixedCost') {
-    void router.push({ name: 'fixed-cost-detail', params: { id: row.id } })
+    void router.push({ name: 'fixed-cost-detail', params: { id: row.targetId || row.id } })
+    return
+  }
+  if (row.targetId) {
+    void router.push({ name: 'purchase-detail', params: { id: row.targetId } })
     return
   }
   void router.push({ name: 'purchases' })

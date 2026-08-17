@@ -12,4 +12,6 @@ public class Installment : BaseEntity
     public DateTime DueDate { get; set; }
     public DateTime? PaidDate { get; set; }
     public string? PaymentUrl { get; set; }
+    public Guid? EntryId { get; set; }
+    public Entry? Entry { get; set; }
 }

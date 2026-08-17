@@ -27,6 +27,7 @@ public class DashboardService
         var income = await _db.IncomeSources.Where(i => i.IsActive).SumAsync(i => (decimal?)i.Amount, cancellationToken) ?? 0m;
         var fixedCosts = await _db.FixedCosts.Where(c => c.IsActive).SumAsync(c => (decimal?)c.Amount, cancellationToken) ?? 0m;
         var monthlyGoal = await _db.Reserves.SumAsync(r => (decimal?)(r.MonthlyGoal ?? 0m), cancellationToken) ?? 0m;
+        var activeInstallments = await GetActiveInstallmentMonthlyTotalAsync(cancellationToken);
         var propertyRemaining = await _db.Properties
             .SumAsync(p => (decimal?)p.RemainingBalance, cancellationToken) ?? 0m;
 
@@ -37,7 +38,7 @@ public class DashboardService
             income,
             fixedCosts,
             monthlyGoal,
-            income - (monthlyGoal + fixedCosts),
+            income - (monthlyGoal + fixedCosts + activeInstallments),
             propertyRemaining);
     }
 
@@ -134,7 +135,7 @@ public class DashboardService
             .Where(c => c.IsActive && c.DueDate != null && c.DueDate <= horizon)
             .OrderBy(c => c.DueDate)
             .Take(20)
-            .Select(c => new UpcomingBillDto("FixedCost", c.Id, c.Name, c.Amount, c.DueDate))
+            .Select(c => new UpcomingBillDto("FixedCost", c.Id, c.Name, c.Amount, c.DueDate, c.Id))
             .ToListAsync(cancellationToken);
 
         var installments = await _db.Installments
@@ -142,7 +143,7 @@ public class DashboardService
             .Where(i => !i.Paid && i.DueDate <= horizon)
             .OrderBy(i => i.DueDate)
             .Take(20)
-            .Select(i => new UpcomingBillDto("Installment", i.Id, i.Purchase.Name, i.Amount, i.DueDate))
+            .Select(i => new UpcomingBillDto("Installment", i.Id, i.Purchase.Name, i.Amount, i.DueDate, i.PurchaseId))
             .ToListAsync(cancellationToken);
 
         return pendingCosts
@@ -151,5 +152,18 @@ public class DashboardService
             .ThenBy(b => b.Name)
             .Take(20)
             .ToList();
+    }
+
+    private async Task<decimal> GetActiveInstallmentMonthlyTotalAsync(CancellationToken cancellationToken)
+    {
+        var unpaid = await _db.Installments
+            .Where(i => !i.Paid)
+            .Select(i => new { i.PurchaseId, i.Amount, i.DueDate })
+            .ToListAsync(cancellationToken);
+
+        return unpaid
+            .GroupBy(i => i.PurchaseId)
+            .Select(g => g.OrderBy(i => i.DueDate).First().Amount)
+            .Sum();
     }
 }

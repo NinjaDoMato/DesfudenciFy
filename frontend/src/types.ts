@@ -158,19 +158,27 @@ export interface IncomeSource {
   propertyId?: string | null
 }
 
+export interface PurchaseInstallment {
+  id: string
+  amount: number
+  installmentNumber: number
+  paid: boolean
+  dueDate: string
+  paidDate?: string | null
+  paymentUrl?: string | null
+  entryId?: string | null
+}
+
+export type PurchaseDebitSource = 'None' | 'FreeBalance' | 'Reserve'
+
 export interface Purchase {
   id: string
   name: string
   productUrl?: string | null
-  installments: {
-    id: string
-    amount: number
-    installmentNumber: number
-    paid: boolean
-    dueDate: string
-    paidDate?: string | null
-    paymentUrl?: string | null
-  }[]
+  debitSource: PurchaseDebitSource
+  reserveId?: string | null
+  reserveName?: string | null
+  installments: PurchaseInstallment[]
 }
 
 export interface DashboardTotals {

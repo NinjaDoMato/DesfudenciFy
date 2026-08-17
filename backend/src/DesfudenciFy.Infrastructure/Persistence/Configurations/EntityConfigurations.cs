@@ -277,6 +277,10 @@ public class PurchaseConfiguration : IEntityTypeConfiguration<Purchase>
         builder.HasKey(x => x.Id);
         builder.Property(x => x.Name).HasMaxLength(200).IsRequired();
         builder.Property(x => x.ProductUrl).HasMaxLength(1000);
+        builder.HasOne(x => x.Reserve)
+            .WithMany(x => x.Purchases)
+            .HasForeignKey(x => x.ReserveId)
+            .OnDelete(DeleteBehavior.SetNull);
     }
 }
 
@@ -292,5 +296,9 @@ public class InstallmentConfiguration : IEntityTypeConfiguration<Installment>
             .WithMany(x => x.Installments)
             .HasForeignKey(x => x.PurchaseId)
             .OnDelete(DeleteBehavior.Cascade);
+        builder.HasOne(x => x.Entry)
+            .WithMany()
+            .HasForeignKey(x => x.EntryId)
+            .OnDelete(DeleteBehavior.SetNull);
     }
 }

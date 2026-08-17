@@ -13,4 +13,5 @@ public class Reserve : BaseEntity
     public ICollection<Entry> Entries { get; set; } = new List<Entry>();
     public ICollection<ReserveInvestment> LinkedInvestments { get; set; } = new List<ReserveInvestment>();
     public ICollection<FixedCost> FixedCosts { get; set; } = new List<FixedCost>();
+    public ICollection<Purchase> Purchases { get; set; } = new List<Purchase>();
 }

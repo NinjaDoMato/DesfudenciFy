@@ -36,7 +36,7 @@ public sealed class TestDbFixture : IAsyncDisposable
         Investments = new InvestmentService(AppDb, Balance);
         Properties = new PropertyService(AppDb, new NoOpFileStorage(), Balance);
         FixedCosts = new FixedCostService(AppDb, Balance);
-        Purchases = new PurchaseService(AppDb);
+        Purchases = new PurchaseService(AppDb, Balance);
         IncomeSources = new IncomeSourceService(AppDb);
 
         SeedCatalogTypes();

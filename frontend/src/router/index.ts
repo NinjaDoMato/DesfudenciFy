@@ -21,6 +21,7 @@ const router = createRouter({
         { path: 'fixed-costs', name: 'fixed-costs', component: () => import('@/views/FixedCostsView.vue') },
         { path: 'fixed-costs/:id', name: 'fixed-cost-detail', component: () => import('@/views/FixedCostDetailView.vue') },
         { path: 'purchases', name: 'purchases', component: () => import('@/views/PurchasesView.vue') },
+        { path: 'purchases/:id', name: 'purchase-detail', component: () => import('@/views/PurchaseDetailView.vue') },
         { path: 'admin/users', name: 'admin-users', component: () => import('@/views/admin/UsersView.vue'), meta: { admin: true } },
         { path: 'admin/bank-accounts', name: 'admin-bank-accounts', component: () => import('@/views/admin/BankAccountsView.vue'), meta: { admin: true } },
         { path: 'admin/investment-types', name: 'admin-investment-types', component: () => import('@/views/admin/InvestmentTypesView.vue'), meta: { admin: true } },

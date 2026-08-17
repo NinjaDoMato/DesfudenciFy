@@ -280,7 +280,12 @@ namespace DesfudenciFy.Infrastructure.Persistence.Migrations
                     b.Property<Guid>("PurchaseId")
                         .HasColumnType("uuid");
 
+                    b.Property<Guid?>("EntryId")
+                        .HasColumnType("uuid");
+
                     b.HasKey("Id");
+
+                    b.HasIndex("EntryId");
 
                     b.HasIndex("PurchaseId");
 
@@ -588,6 +593,9 @@ namespace DesfudenciFy.Infrastructure.Persistence.Migrations
                     b.Property<DateTime>("DateCreated")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<int>("DebitSource")
+                        .HasColumnType("integer");
+
                     b.Property<DateTime?>("LastUpdate")
                         .HasColumnType("timestamp with time zone");
 
@@ -600,7 +608,12 @@ namespace DesfudenciFy.Infrastructure.Persistence.Migrations
                         .HasMaxLength(1000)
                         .HasColumnType("character varying(1000)");
 
+                    b.Property<Guid?>("ReserveId")
+                        .HasColumnType("uuid");
+
                     b.HasKey("Id");
+
+                    b.HasIndex("ReserveId");
 
                     b.ToTable("Purchases", (string)null);
                 });
@@ -784,11 +797,18 @@ namespace DesfudenciFy.Infrastructure.Persistence.Migrations
 
             modelBuilder.Entity("DesfudenciFy.Domain.Entities.Installment", b =>
                 {
+                    b.HasOne("DesfudenciFy.Domain.Entities.Entry", "Entry")
+                        .WithMany()
+                        .HasForeignKey("EntryId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
                     b.HasOne("DesfudenciFy.Domain.Entities.Purchase", "Purchase")
                         .WithMany("Installments")
                         .HasForeignKey("PurchaseId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("Entry");
 
                     b.Navigation("Purchase");
                 });
@@ -875,6 +895,16 @@ namespace DesfudenciFy.Infrastructure.Persistence.Migrations
                     b.Navigation("Property");
                 });
 
+            modelBuilder.Entity("DesfudenciFy.Domain.Entities.Purchase", b =>
+                {
+                    b.HasOne("DesfudenciFy.Domain.Entities.Reserve", "Reserve")
+                        .WithMany("Purchases")
+                        .HasForeignKey("ReserveId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("Reserve");
+                });
+
             modelBuilder.Entity("DesfudenciFy.Domain.Entities.ReserveInvestment", b =>
                 {
                     b.HasOne("DesfudenciFy.Domain.Entities.Investment", "Investment")
@@ -944,6 +974,8 @@ namespace DesfudenciFy.Infrastructure.Persistence.Migrations
                     b.Navigation("FixedCosts");
 
                     b.Navigation("LinkedInvestments");
+
+                    b.Navigation("Purchases");
                 });
 #pragma warning restore 612, 618
         }

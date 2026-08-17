@@ -217,9 +217,32 @@ public record UpsertIncomeSourceRequest(
     bool IsActive,
     Guid IncomeTypeId);
 
-public record PurchaseDto(Guid Id, string Name, string? ProductUrl, IReadOnlyList<InstallmentDto> Installments);
-public record InstallmentDto(Guid Id, decimal Amount, int InstallmentNumber, bool Paid, DateTime DueDate, DateTime? PaidDate, string? PaymentUrl);
-public record CreatePurchaseRequest(string Name, string? ProductUrl, decimal TotalAmount, int InstallmentCount, DateTime? FirstDueDate);
+public record PurchaseDto(
+    Guid Id,
+    string Name,
+    string? ProductUrl,
+    string DebitSource,
+    Guid? ReserveId,
+    string? ReserveName,
+    IReadOnlyList<InstallmentDto> Installments);
+public record InstallmentDto(
+    Guid Id,
+    decimal Amount,
+    int InstallmentNumber,
+    bool Paid,
+    DateTime DueDate,
+    DateTime? PaidDate,
+    string? PaymentUrl,
+    Guid? EntryId);
+public record CreatePurchaseRequest(
+    string Name,
+    string? ProductUrl,
+    decimal TotalAmount,
+    int InstallmentCount,
+    DateTime? FirstDueDate,
+    Guid? ReserveId = null,
+    string DebitSource = "None");
+public record UpdatePurchaseRequest(string Name, string? ProductUrl, Guid? ReserveId = null, string DebitSource = "None");
 
 public record DashboardTotalsDto(
     decimal TotalAccumulated,
@@ -235,4 +258,4 @@ public record MonthlyCapitalDto(string Month, decimal FreeCapital, decimal Inves
 public record ReserveDistributionDto(Guid ReserveId, string Name, decimal Value, string? Color);
 public record InvestmentTypeDistributionDto(Guid InvestmentTypeId, string Name, decimal Value);
 public record UpcomingInvestmentDto(Guid Id, string Name, DateTime EndDate, decimal CurrentAmount);
-public record UpcomingBillDto(string Kind, Guid Id, string Name, decimal Amount, DateTime? DueDate);
+public record UpcomingBillDto(string Kind, Guid Id, string Name, decimal Amount, DateTime? DueDate, Guid? TargetId = null);
