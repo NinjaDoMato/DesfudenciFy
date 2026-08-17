@@ -47,6 +47,8 @@ export interface Investment {
   sourceReserves: { reserveId?: string | null; amount: number }[]
 }
 
+export type PropertyStatus = 'Active' | 'Sold'
+
 export interface Property {
   id: string
   name: string
@@ -63,6 +65,9 @@ export interface Property {
   totalRentPaid: number
   propertyCost: number
   propertyReturn: number
+  status: PropertyStatus
+  saleAmount?: number | null
+  soldAt?: string | null
   amortizations: {
     id: string
     amount: number
@@ -192,6 +197,10 @@ export interface DashboardTotals {
   totalPropertyRemainingBalance: number
   totalFinancialCapital: number
   totalPropertyAppraisedValue: number
+  totalMonthlyCosts: number
+  totalInvestedFromFree: number
+  totalInvestedFromReserves: number
+  retainedProfit: number
 }
 
 export { formatMoney, moneyPolarity, parseMoneyInput } from '@/utils/money'

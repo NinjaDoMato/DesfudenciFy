@@ -344,7 +344,7 @@ onMounted(async () => {
     <div class="page-header">
       <div>
         <h1>Investimentos</h1>
-        <p class="muted">Renda fixa com saldo livre e/ou reservas. Na liquidação, o lucro é rateado pelo valor investido.</p>
+        <p class="muted">Investimentos de renda fixa criados usando saldo livre e/ou saldo reservado.</p>
       </div>
       <button class="btn" type="button" @click="openCreate">Novo investimento</button>
     </div>

@@ -24,15 +24,27 @@ public class DashboardService
             .Where(e => e.Destination == EntryDestination.Reserve)
             .SumAsync(e => (decimal?)e.Amount, cancellationToken) ?? 0m;
         var invested = await _db.ReserveInvestments.SumAsync(ri => (decimal?)ri.Amount, cancellationToken) ?? 0m;
+        var investedFromFree = await _balance.GetFreeBalanceInvestedAsync(cancellationToken);
+        var investedFromReserves = invested - investedFromFree;
+        var activeCurrent = await _db.Investments
+            .Where(i => i.Status == InvestmentStatus.Active)
+            .SumAsync(i => (decimal?)i.CurrentAmount, cancellationToken) ?? 0m;
+        var activeStart = await _db.Investments
+            .Where(i => i.Status == InvestmentStatus.Active)
+            .SumAsync(i => (decimal?)i.StartAmount, cancellationToken) ?? 0m;
+        var retainedProfit = activeCurrent - activeStart;
         var income = await _db.IncomeSources.Where(i => i.IsActive).SumAsync(i => (decimal?)i.Amount, cancellationToken) ?? 0m;
         var fixedCosts = await _db.FixedCosts.Where(c => c.IsActive).SumAsync(c => (decimal?)c.Amount, cancellationToken) ?? 0m;
         var monthlyGoal = await _db.Reserves.SumAsync(r => (decimal?)(r.MonthlyGoal ?? 0m), cancellationToken) ?? 0m;
         var activeInstallments = await GetActiveInstallmentMonthlyTotalAsync(cancellationToken);
         var propertyRemaining = await _db.Properties
+            .Where(p => p.Status == PropertyStatus.Active)
             .SumAsync(p => (decimal?)p.RemainingBalance, cancellationToken) ?? 0m;
         var financialCapital = freeCurrent + reserveCurrent;
         var propertyAppraised = await _db.Properties
+            .Where(p => p.Status == PropertyStatus.Active)
             .SumAsync(p => (decimal?)p.AppraisedValue, cancellationToken) ?? 0m;
+        var monthlyCosts = monthlyGoal + fixedCosts + activeInstallments;
 
         return new DashboardTotalsDto(
             TotalAccumulated: financialCapital + propertyAppraised,
@@ -41,10 +53,14 @@ public class DashboardService
             TotalIncome: income,
             TotalFixedCosts: fixedCosts,
             MonthlyInvestmentGoal: monthlyGoal,
-            MonthlyBalance: income - (monthlyGoal + fixedCosts + activeInstallments),
+            MonthlyBalance: income - monthlyCosts,
             TotalPropertyRemainingBalance: propertyRemaining,
             TotalFinancialCapital: financialCapital,
-            TotalPropertyAppraisedValue: propertyAppraised);
+            TotalPropertyAppraisedValue: propertyAppraised,
+            TotalMonthlyCosts: monthlyCosts,
+            TotalInvestedFromFree: investedFromFree,
+            TotalInvestedFromReserves: investedFromReserves,
+            RetainedProfit: retainedProfit);
     }
 
     public async Task<IReadOnlyList<MonthlyCapitalDto>> GetMonthlyCapitalAsync(CancellationToken cancellationToken = default)

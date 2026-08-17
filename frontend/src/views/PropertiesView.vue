@@ -2,16 +2,19 @@
 import { onMounted, reactive, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import api from '@/api/client'
-import { formatMoney, type Property } from '@/types'
+import { formatMoney, type Property, type Reserve } from '@/types'
 import MoneyInput from '@/components/MoneyInput.vue'
 import DataTable from '@/components/DataTable.vue'
 import IconButton from '@/components/IconButton.vue'
+import PropertySaleModal from '@/components/PropertySaleModal.vue'
 import type { DataTableColumn } from '@/composables/useDataTable'
 import { useToastStore } from '@/stores/toast'
 
 const router = useRouter()
 const toast = useToastStore()
 const items = ref<Property[]>([])
+const reserves = ref<Reserve[]>([])
+const selling = ref<Property | null>(null)
 const showForm = ref(false)
 const photoFile = ref<File | null>(null)
 const syncRemaining = ref(true)
@@ -32,7 +35,7 @@ const columns: DataTableColumn<Property>[] = [
   { key: 'address', label: 'Endereço', sortValue: (row) => row.address },
   { key: 'remainingBalance', label: 'Saldo restante', sortValue: (row) => row.remainingBalance },
   { key: 'remainingInstallments', label: 'Parcelas', sortValue: (row) => row.remainingInstallments },
-  { key: 'isRented', label: 'Alugado', sortValue: (row) => (row.isRented ? 1 : 0) },
+  { key: 'isRented', label: 'Status', sortValue: (row) => row.status === 'Sold' ? 2 : row.isRented ? 1 : 0 },
   { key: 'actions', label: '', sortable: false },
 ]
 
@@ -41,8 +44,25 @@ function toastError(e: unknown, fallback: string) {
 }
 
 async function load() {
-  const { data } = await api.get<Property[]>('/properties')
-  items.value = data
+  const [propertiesRes, reservesRes] = await Promise.all([
+    api.get<Property[]>('/properties'),
+    api.get<Reserve[]>('/reserves'),
+  ])
+  items.value = propertiesRes.data
+  reserves.value = reservesRes.data
+}
+
+function occupancyLabel(row: Property) {
+  if (row.status === 'Sold') return 'Vendido'
+  return row.isRented ? 'Alugado' : 'Não alugado'
+}
+
+function onSold() {
+  selling.value = null
+  toast.success('Imóvel vendido.')
+  void load().catch((error) => {
+    toastError(error, 'Erro')
+  })
 }
 
 function openCreate() {
@@ -141,8 +161,8 @@ onMounted(async () => {
       <DataTable :rows="items" :columns="columns" row-key="id" initial-sort-key="name">
         <template #cell-remainingBalance="{ row }">{{ formatMoney(row.remainingBalance) }}</template>
         <template #cell-isRented="{ row }">
-          <span class="badge" :class="row.isRented ? 'success' : 'danger'">
-            {{ row.isRented ? 'Alugado' : 'Não alugado' }}
+          <span class="badge" :class="row.status === 'Sold' ? '' : row.isRented ? 'success' : 'danger'">
+            {{ occupancyLabel(row) }}
           </span>
         </template>
         <template #cell-actions="{ row }">
@@ -151,6 +171,13 @@ onMounted(async () => {
               label="Detalhes"
               icon="details"
               @click="router.push({ name: 'property-detail', params: { id: row.id } })"
+            />
+            <IconButton
+              label="Vender"
+              icon="sell"
+              variant="primary"
+              :disabled="row.status === 'Sold'"
+              @click="selling = row"
             />
             <IconButton label="Excluir" icon="delete" variant="danger" @click="remove(row.id)" />
           </div>
@@ -185,5 +212,13 @@ onMounted(async () => {
         </div>
       </form>
     </div>
+
+    <PropertySaleModal
+      v-if="selling"
+      :property="selling"
+      :reserves="reserves"
+      @close="selling = null"
+      @sold="onSold"
+    />
   </div>
 </template>

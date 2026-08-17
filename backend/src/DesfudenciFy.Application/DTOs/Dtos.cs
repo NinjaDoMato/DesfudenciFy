@@ -105,6 +105,9 @@ public record PropertyDto(
     decimal TotalRentPaid,
     decimal PropertyCost,
     decimal PropertyReturn,
+    string Status,
+    decimal? SaleAmount,
+    DateTime? SoldAt,
     IReadOnlyList<PropertyAmortizationDto> Amortizations,
     IReadOnlyList<PropertyExpenseDto> Expenses,
     IReadOnlyList<PropertyRentPaymentDto> RentPayments);
@@ -153,6 +156,11 @@ public record UpdatePropertyRequest(
     decimal InstallmentAmount,
     int RemainingInstallments,
     decimal RemainingBalance);
+
+public record SellPropertyRequest(
+    decimal SaleAmount,
+    EntryDestination Destination,
+    Guid? ReserveId);
 
 public record CreateAmortizationRequest(
     decimal Amount,
@@ -254,7 +262,11 @@ public record DashboardTotalsDto(
     decimal MonthlyBalance,
     decimal TotalPropertyRemainingBalance,
     decimal TotalFinancialCapital,
-    decimal TotalPropertyAppraisedValue);
+    decimal TotalPropertyAppraisedValue,
+    decimal TotalMonthlyCosts,
+    decimal TotalInvestedFromFree,
+    decimal TotalInvestedFromReserves,
+    decimal RetainedProfit);
 
 public record MonthlyCapitalDto(string Month, decimal FreeCapital, decimal InvestedCapital);
 public record ReserveDistributionDto(Guid ReserveId, string Name, decimal Value, string? Color);

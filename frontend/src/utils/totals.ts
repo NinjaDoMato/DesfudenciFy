@@ -33,6 +33,15 @@ export interface PatrimonioTotals {
   patrimonio: number
   financialCapital: number
   propertyAppraised: number
+  saldoLivre: number
+  somatorioReservas: number
+}
+
+export interface InvestidoTotals {
+  totalInvestido: number
+  investedFromFree: number
+  investedFromReserves: number
+  lucroRetido: number
 }
 
 export function roundMoney(value: number): number {
@@ -52,17 +61,44 @@ export function sumReservedAvailable(
 /**
  * Dashboard "Patrimônio acumulado":
  * capital financeiro (saldo livre atual + reservas atuais) + soma dos valores avaliados dos imóveis.
+ * Breakdown uses Extrato/Reservas "Saldo livre" (available). Somatório das reservas is the
+ * remainder of financial capital so the parts still add to the total
+ * (saldo livre + somatório das reservas + imóveis).
  */
 export function computePatrimonioTotals(
   financialCapital: number,
   propertyAppraised: number,
+  saldoLivre: number,
 ): PatrimonioTotals {
   const financial = roundMoney(financialCapital)
   const properties = roundMoney(propertyAppraised)
+  const free = roundMoney(saldoLivre)
   return {
     financialCapital: financial,
     propertyAppraised: properties,
     patrimonio: roundMoney(financial + properties),
+    saldoLivre: free,
+    somatorioReservas: roundMoney(financial - free),
+  }
+}
+
+/**
+ * Dashboard "Investido":
+ * total = ReserveInvestment amounts (same as Reservas "Total investido").
+ * Saldo livre / Reservas match computeReserveTotals investedFromFree / investedFromReserves.
+ * Lucro retido = computeInvestmentTotals on active investments (current − start).
+ */
+export function computeInvestidoTotals(
+  totalInvested: number,
+  investedFromFree: number,
+  investedFromReserves: number,
+  lucroRetido: number,
+): InvestidoTotals {
+  return {
+    totalInvestido: roundMoney(totalInvested),
+    investedFromFree: roundMoney(investedFromFree),
+    investedFromReserves: roundMoney(investedFromReserves),
+    lucroRetido: roundMoney(lucroRetido),
   }
 }
 

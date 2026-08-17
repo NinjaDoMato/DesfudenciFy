@@ -2,7 +2,7 @@
 withDefaults(
   defineProps<{
     label: string
-    icon: 'details' | 'edit' | 'amount' | 'liquidate' | 'delete' | 'pay'
+    icon: 'details' | 'edit' | 'amount' | 'liquidate' | 'delete' | 'pay' | 'sell'
     variant?: 'primary' | 'secondary' | 'danger'
     disabled?: boolean
   }>(),
@@ -58,6 +58,11 @@ withDefaults(
         <path d="M7 7l1 12a2 2 0 0 0 2 2h4a2 2 0 0 0 2-2l1-12" />
         <path d="M10 11v6" />
         <path d="M14 11v6" />
+      </template>
+      <template v-else-if="icon === 'sell'">
+        <path d="M3 7h13v10H3z" />
+        <path d="M16 10h4l2 2-2 2h-4" />
+        <path d="M7 12h5" />
       </template>
       <template v-else-if="icon === 'pay'">
         <rect x="3" y="6" width="18" height="12" rx="2" />

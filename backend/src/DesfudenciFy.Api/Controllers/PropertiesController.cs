@@ -28,6 +28,10 @@ public class PropertiesController : ControllerBase
     public Task<PropertyDto> Update(Guid id, [FromBody] UpdatePropertyRequest request, CancellationToken cancellationToken) =>
         _service.UpdateAsync(id, request, cancellationToken);
 
+    [HttpPost("{id:guid}/sell")]
+    public Task<PropertyDto> Sell(Guid id, [FromBody] SellPropertyRequest request, CancellationToken cancellationToken) =>
+        _service.SellAsync(id, request, cancellationToken);
+
     [HttpDelete("{id:guid}")]
     public async Task<IActionResult> Delete(Guid id, CancellationToken cancellationToken)
     {

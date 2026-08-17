@@ -92,7 +92,7 @@ onMounted(async () => {
 <template>
   <div class="page">
     <div class="page-header">
-      <div><h1>Entradas</h1><p class="muted">Fontes de renda recorrentes (salário, etc.).</p></div>
+      <div><h1>Entradas</h1><p class="muted">Fontes de renda recorrentes.</p></div>
       <button class="btn" type="button" @click="openCreate">Nova entrada</button>
     </div>
     <div class="panel">

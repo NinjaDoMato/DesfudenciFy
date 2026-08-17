@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  computeInvestidoTotals,
   computeInvestmentTotals,
   computePatrimonioTotals,
   computeReserveTotals,
@@ -106,7 +107,7 @@ describe('computeInvestmentTotals', () => {
 
 describe('computePatrimonioTotals', () => {
   it('should add financial capital and property appraised values', () => {
-    const totals = computePatrimonioTotals(1400, 450_000)
+    const totals = computePatrimonioTotals(1400, 450_000, 1000)
 
     expect(totals.financialCapital).toBe(1400)
     expect(totals.propertyAppraised).toBe(450_000)
@@ -114,11 +115,36 @@ describe('computePatrimonioTotals', () => {
   })
 
   it('should keep patrimônio equal to financial capital when there are no properties', () => {
-    expect(computePatrimonioTotals(1650.4, 0)).toEqual({
+    expect(computePatrimonioTotals(1650.4, 0, 1650.4)).toEqual({
       financialCapital: 1650.4,
       propertyAppraised: 0,
       patrimonio: 1650.4,
+      saldoLivre: 1650.4,
+      somatorioReservas: 0,
     })
+  })
+
+  it('should split financial capital into saldo livre and somatório das reservas', () => {
+    const totals = computePatrimonioTotals(1400, 450_000, 1000)
+
+    expect(totals.saldoLivre).toBe(1000)
+    expect(totals.somatorioReservas).toBe(400)
+    expect(totals.saldoLivre + totals.somatorioReservas + totals.propertyAppraised).toBe(totals.patrimonio)
+  })
+})
+
+describe('computeInvestidoTotals', () => {
+  it('should keep invested split and lucro retido from the same sources as reservas and investimentos', () => {
+    const totals = computeInvestidoTotals(1000, 300, 700, 100)
+
+    expect(totals.totalInvestido).toBe(1000)
+    expect(totals.investedFromFree).toBe(300)
+    expect(totals.investedFromReserves).toBe(700)
+    expect(totals.lucroRetido).toBe(100)
+  })
+
+  it('should keep negative lucro retido', () => {
+    expect(computeInvestidoTotals(500, 500, 0, -25.5).lucroRetido).toBe(-25.5)
   })
 })
 

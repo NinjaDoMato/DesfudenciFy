@@ -57,4 +57,16 @@ public class PropertyEconomicsTests
         var ret = PropertyEconomics.CalculateReturn(100.005m, 50m, []);
         Assert.Equal(50.01m, ret);
     }
+
+    [Fact]
+    public void Should_use_sale_amount_as_realization_price_for_return()
+    {
+        var cost = PropertyEconomics.CalculateCost(200_000m, [5_000m]);
+        var result = PropertyEconomics.CalculateReturn(
+            appraisedValue: 280_000m,
+            propertyCost: cost,
+            rentPaymentAmounts: [1_200m]);
+
+        Assert.Equal(76_200m, result);
+    }
 }

@@ -13,7 +13,7 @@ import {
 } from 'chart.js'
 import api from '@/api/client'
 import { formatMoney, moneyPolarity, type DashboardTotals } from '@/types'
-import { computePatrimonioTotals } from '@/utils/totals'
+import { computeInvestidoTotals, computePatrimonioTotals } from '@/utils/totals'
 import DataTable from '@/components/DataTable.vue'
 import type { DataTableColumn } from '@/composables/useDataTable'
 import { useThemeStore } from '@/stores/theme'
@@ -69,6 +69,17 @@ const patrimonio = computed(() => {
   return computePatrimonioTotals(
     totals.value.totalFinancialCapital,
     totals.value.totalPropertyAppraisedValue,
+    totals.value.totalFreeBalance,
+  )
+})
+
+const investido = computed(() => {
+  if (!totals.value) return null
+  return computeInvestidoTotals(
+    totals.value.totalInvested,
+    totals.value.totalInvestedFromFree,
+    totals.value.totalInvestedFromReserves,
+    totals.value.retainedProfit,
   )
 })
 function toastError(e: unknown, fallback: string) {
@@ -231,28 +242,62 @@ onMounted(async () => {
         <p class="muted">Visão geral do capital livre, investido e compromissos.</p>
       </div>
     </div>
-    <div v-if="totals && patrimonio" class="grid grid-totals-lead">
+    <div v-if="totals && patrimonio && investido" class="grid grid-totals-lead">
       <div class="kpi">
         <div class="label">Patrimônio acumulado</div>
         <div class="kpi-body">
           <div class="value">{{ formatMoney(patrimonio.patrimonio) }}</div>
           <div class="kpi-break">
             <div class="kpi-break-row">
-              <span>Saldo + reservas</span>
-              <strong>{{ formatMoney(patrimonio.financialCapital) }}</strong>
+              <span>Valor Reservado</span>
+              <strong>{{ formatMoney(patrimonio.somatorioReservas) }}</strong>
             </div>
             <div class="kpi-break-row">
+              <span>Saldo livre</span>
+              <strong>{{ formatMoney(patrimonio.saldoLivre) }}</strong>
+            </div>
+            <div v-if="patrimonio.propertyAppraised !== 0" class="kpi-break-row">
               <span>Imóveis</span>
               <strong>{{ formatMoney(patrimonio.propertyAppraised) }}</strong>
             </div>
           </div>
         </div>
       </div>
-      <div class="kpi"><div class="label">Saldo livre</div><div class="value">{{ formatMoney(totals.totalFreeBalance) }}</div></div>
-      <div class="kpi"><div class="label">Investido</div><div class="value">{{ formatMoney(totals.totalInvested) }}</div></div>
+      <div class="kpi">
+        <div class="label">Investido</div>
+        <div class="kpi-body">
+          <div class="value">{{ formatMoney(investido.totalInvestido) }}</div>
+          <div class="kpi-break">
+            <div class="kpi-break-row">
+              <span>Saldo livre</span>
+              <strong>{{ formatMoney(investido.investedFromFree) }}</strong>
+            </div>
+            <div class="kpi-break-row">
+              <span>Reservas</span>
+              <strong>{{ formatMoney(investido.investedFromReserves) }}</strong>
+            </div>
+            <div class="kpi-break-row">
+              <span>Lucro retido</span>
+              <strong :class="moneyPolarity(investido.lucroRetido)">{{ formatMoney(investido.lucroRetido) }}</strong>
+            </div>
+          </div>
+        </div>
+      </div>
       <div class="kpi">
         <div class="label">Saldo mensal</div>
-        <div class="value" :class="moneyPolarity(totals.monthlyBalance)">{{ formatMoney(totals.monthlyBalance) }}</div>
+        <div class="kpi-body">
+          <div class="value" :class="moneyPolarity(totals.monthlyBalance)">{{ formatMoney(totals.monthlyBalance) }}</div>
+          <div class="kpi-break">
+            <div class="kpi-break-row">
+              <span>Total de Entradas</span>
+              <strong :class="moneyPolarity(totals.totalIncome)">{{ formatMoney(totals.totalIncome) }}</strong>
+            </div>
+            <div class="kpi-break-row">
+              <span>Total de custos</span>
+              <strong :class="moneyPolarity(-totals.totalMonthlyCosts)">{{ formatMoney(totals.totalMonthlyCosts) }}</strong>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
     <div class="charts-stack">

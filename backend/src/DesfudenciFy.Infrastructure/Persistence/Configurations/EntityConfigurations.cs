@@ -145,6 +145,7 @@ public class PropertyConfiguration : IEntityTypeConfiguration<Property>
         builder.Property(x => x.InitialFinancingAmount).HasPrecision(18, 2);
         builder.Property(x => x.InstallmentAmount).HasPrecision(18, 2);
         builder.Property(x => x.RemainingBalance).HasPrecision(18, 2);
+        builder.Property(x => x.SaleAmount).HasPrecision(18, 2);
     }
 }
 

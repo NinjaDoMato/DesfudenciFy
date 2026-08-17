@@ -61,6 +61,7 @@ public class PropertyService
     public async Task<PropertyDto> UpdateAsync(Guid id, UpdatePropertyRequest request, CancellationToken cancellationToken = default)
     {
         var property = await LoadAsync(id, cancellationToken);
+        EnsureNotSold(property);
         property.Name = request.Name.Trim();
         property.Address = request.Address.Trim();
         property.AppraisedValue = request.AppraisedValue;
@@ -70,6 +71,60 @@ public class PropertyService
         property.RemainingInstallments = request.RemainingInstallments;
         property.RemainingBalance = request.RemainingBalance;
         property.IsRented = request.IsRented;
+
+        await SyncInstallmentFixedCostAsync(property, cancellationToken);
+        await SyncRentalIncomeAsync(property, cancellationToken);
+        await _db.SaveChangesAsync(cancellationToken);
+
+        return Map(await LoadAsync(id, cancellationToken));
+    }
+
+    public async Task<PropertyDto> SellAsync(Guid id, SellPropertyRequest request, CancellationToken cancellationToken = default)
+    {
+        var property = await LoadAsync(id, cancellationToken);
+        EnsureNotSold(property);
+
+        if (request.SaleAmount <= 0)
+        {
+            throw new AppException("O valor da venda deve ser maior que zero.");
+        }
+
+        ValidateSaleDestination(request.Destination, request.ReserveId);
+
+        if (request.Destination == EntryDestination.Reserve)
+        {
+            _ = await _db.Reserves.FirstOrDefaultAsync(r => r.Id == request.ReserveId, cancellationToken)
+                ?? throw new NotFoundException("Reserva não encontrada.");
+        }
+
+        var expenseAmounts = property.Expenses.Select(e => e.Amount);
+        var rentAmounts = property.RentPayments.Select(r => r.Amount);
+        var propertyCost = PropertyEconomics.CalculateCost(property.InitialFinancingAmount, expenseAmounts);
+        var profit = PropertyEconomics.CalculateReturn(request.SaleAmount, propertyCost, rentAmounts);
+
+        if (profit < 0)
+        {
+            await _balance.EnsureAvailableAsync(request.Destination, request.ReserveId, Math.Abs(profit), cancellationToken);
+        }
+
+        if (profit != 0)
+        {
+            _db.Add(new Entry
+            {
+                Amount = profit,
+                Observation = $"Venda do imóvel - {property.Name}",
+                OccurredAt = DateTime.UtcNow,
+                Destination = request.Destination,
+                ReserveId = request.Destination == EntryDestination.Reserve ? request.ReserveId : null
+            });
+        }
+
+        property.RemainingBalance = 0;
+        property.RemainingInstallments = 0;
+        property.IsRented = false;
+        property.Status = PropertyStatus.Sold;
+        property.SaleAmount = request.SaleAmount;
+        property.SoldAt = DateTime.UtcNow;
 
         await SyncInstallmentFixedCostAsync(property, cancellationToken);
         await SyncRentalIncomeAsync(property, cancellationToken);
@@ -148,6 +203,7 @@ public class PropertyService
         CancellationToken cancellationToken = default)
     {
         var property = await LoadAsync(propertyId, cancellationToken);
+        EnsureNotSold(property);
 
         var installmentsAmortized = request.InstallmentsAmortized;
         if (installmentsAmortized < 0)
@@ -257,6 +313,7 @@ public class PropertyService
         CancellationToken cancellationToken = default)
     {
         var property = await LoadAsync(propertyId, cancellationToken);
+        EnsureNotSold(property);
         if (request.Amount <= 0)
         {
             throw new AppException("O valor do gasto deve ser maior que zero.");
@@ -341,6 +398,7 @@ public class PropertyService
         CancellationToken cancellationToken = default)
     {
         var property = await LoadAsync(propertyId, cancellationToken);
+        EnsureNotSold(property);
         if (request.Amount <= 0)
         {
             throw new AppException("O valor do aluguel recebido deve ser maior que zero.");
@@ -490,6 +548,27 @@ public class PropertyService
             .FirstOrDefaultAsync(p => p.Id == id, cancellationToken)
         ?? throw new NotFoundException("Imóvel não encontrado.");
 
+    private static void EnsureNotSold(Property property)
+    {
+        if (property.Status == PropertyStatus.Sold)
+        {
+            throw new AppException("Este imóvel já foi vendido.");
+        }
+    }
+
+    private static void ValidateSaleDestination(EntryDestination destination, Guid? reserveId)
+    {
+        if (destination == EntryDestination.Reserve && reserveId is null)
+        {
+            throw new AppException("A reserva é obrigatória quando o destino é uma reserva.");
+        }
+
+        if (destination == EntryDestination.FreeBalance && reserveId is not null)
+        {
+            throw new AppException("A reserva deve ficar vazia quando o destino é o saldo livre.");
+        }
+    }
+
     private static PropertyDto Map(Property property)
     {
         var expenseAmounts = property.Expenses.Select(e => e.Amount);
@@ -497,7 +576,10 @@ public class PropertyService
         var totalExpenses = expenseAmounts.Sum();
         var totalRentPaid = rentAmounts.Sum();
         var propertyCost = PropertyEconomics.CalculateCost(property.InitialFinancingAmount, expenseAmounts);
-        var propertyReturn = PropertyEconomics.CalculateReturn(property.AppraisedValue, propertyCost, rentAmounts);
+        var realization = property.Status == PropertyStatus.Sold && property.SaleAmount.HasValue
+            ? property.SaleAmount.Value
+            : property.AppraisedValue;
+        var propertyReturn = PropertyEconomics.CalculateReturn(realization, propertyCost, rentAmounts);
 
         return new(
             property.Id,
@@ -515,6 +597,9 @@ public class PropertyService
             totalRentPaid,
             propertyCost,
             propertyReturn,
+            property.Status.ToString(),
+            property.SaleAmount,
+            property.SoldAt,
             property.Amortizations
                 .OrderByDescending(a => a.PaidAt)
                 .Select(a => new PropertyAmortizationDto(a.Id, a.Amount, a.InstallmentsAmortized, a.PaidAt, a.Observation, a.EntryId))

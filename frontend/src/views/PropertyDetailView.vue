@@ -19,6 +19,7 @@ import { formatMoney, type EntryDestination, type Property, type PropertyExpense
 import MoneyInput from '@/components/MoneyInput.vue'
 import DataTable from '@/components/DataTable.vue'
 import IconButton from '@/components/IconButton.vue'
+import PropertySaleModal from '@/components/PropertySaleModal.vue'
 import type { DataTableColumn } from '@/composables/useDataTable'
 import { useThemeStore } from '@/stores/theme'
 import { useToastStore } from '@/stores/toast'
@@ -62,6 +63,7 @@ const propertyId = computed(() => String(route.params.id))
 const property = ref<Property | null>(null)
 const reserves = ref<Reserve[]>([])
 const expenseTypes = ref<PropertyExpenseType[]>([])
+const showSale = ref(false)
 const loading = ref(true)
 const activeTab = ref<DetailTab>('amortization')
 const photoFile = ref<File | null>(null)
@@ -136,6 +138,8 @@ const projectedRemainingInstallments = computed(() => {
   if (!property.value) return 0
   return Math.max(0, property.value.remainingInstallments - Number(amortForm.installmentsAmortized || 0))
 })
+
+const isSold = computed(() => property.value?.status === 'Sold')
 
 const returnTone = computed<Tone>(() => {
   if (!property.value) return ''
@@ -524,6 +528,12 @@ async function removeRentPayment(paymentId: string) {
   }
 }
 
+function onSold() {
+  showSale.value = false
+  toast.success('Imóvel vendido.')
+  void load()
+}
+
 onMounted(load)
 
 watch(propertyId, () => {
@@ -555,9 +565,21 @@ watch(
       <div>
         <p class="eyebrow">Gerenciar</p>
         <h1>{{ property?.name || 'Imóvel' }}</h1>
-        <p class="muted">Dados do imóvel, custos, aluguéis, financiamento e amortizações.</p>
+        <p class="muted">
+          {{ isSold ? 'Imóvel vendido.' : 'Dados do imóvel, custos, aluguéis, financiamento e amortizações.' }}
+        </p>
       </div>
-      <button class="btn secondary" type="button" @click="router.push({ name: 'properties' })">Voltar</button>
+      <div class="actions">
+        <button
+          v-if="property && !isSold"
+          class="btn"
+          type="button"
+          @click="showSale = true"
+        >
+          Vender imóvel
+        </button>
+        <button class="btn secondary" type="button" @click="router.push({ name: 'properties' })">Voltar</button>
+      </div>
     </div>
 
     <p v-if="loading" class="muted">Carregando...</p>
@@ -571,7 +593,7 @@ watch(
           <div class="field"><label>Valor avaliado</label><MoneyInput v-model="form.appraisedValue" /></div>
           <div class="field"><label>Valor do aluguel</label><MoneyInput v-model="form.rentalAmount" /></div>
           <div class="field">
-            <label><input v-model="form.isRented" type="checkbox" /> Alugado</label>
+            <label><input v-model="form.isRented" type="checkbox" :disabled="isSold" /> Alugado</label>
             <span class="muted hint">Ao marcar como alugado, uma entrada do tipo Aluguel é criada/atualizada.</span>
           </div>
           <div class="field">
@@ -596,13 +618,16 @@ watch(
           </div>
 
           <div class="actions">
-            <button class="btn" type="submit">Atualizar imóvel</button>
+            <button class="btn" type="submit" :disabled="isSold">Atualizar imóvel</button>
           </div>
         </form>
 
         <div class="side-stack">
           <div class="panel overview-panel">
-            <h2>Totalizadores</h2>
+            <div class="overview-heading">
+              <h2>Totalizadores</h2>
+              <span v-if="isSold" class="badge">Vendido</span>
+            </div>
 
             <section class="overview-section">
               <h3 class="kpi-group-title">Resultado</h3>
@@ -864,6 +889,14 @@ watch(
         </div>
       </div>
     </template>
+
+    <PropertySaleModal
+      v-if="showSale && property"
+      :property="property"
+      :reserves="reserves"
+      @close="showSale = false"
+      @sold="onSold"
+    />
   </div>
 </template>
 
@@ -895,6 +928,24 @@ watch(
   display: flex;
   flex-direction: column;
   gap: 0;
+}
+
+.overview-heading {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem 0.65rem;
+  margin-bottom: 1rem;
+}
+
+.overview-heading h2 {
+  margin: 0;
+}
+
+.overview-heading .badge {
+  display: inline-flex;
+  width: fit-content;
+  flex: 0 0 auto;
 }
 
 .overview-section + .overview-section {

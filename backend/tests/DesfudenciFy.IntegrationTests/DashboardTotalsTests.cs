@@ -23,6 +23,8 @@ public class DashboardTotalsTests
         var totals = await dashboard.GetTotalsAsync();
 
         Assert.Equal(100m, 1200m / 12m);
+        Assert.Equal(5000m, totals.TotalIncome);
+        Assert.Equal(100m, totals.TotalMonthlyCosts);
         Assert.Equal(4900m, totals.MonthlyBalance);
     }
 
@@ -51,6 +53,7 @@ public class DashboardTotalsTests
         var dashboard = new DashboardService(fx.AppDb, fx.Balance);
         var totals = await dashboard.GetTotalsAsync();
 
+        Assert.Equal(100m, totals.TotalMonthlyCosts);
         Assert.Equal(4900m, totals.MonthlyBalance);
     }
 
@@ -86,5 +89,36 @@ public class DashboardTotalsTests
         Assert.Equal(1_400m, totals.TotalFinancialCapital);
         Assert.Equal(450_000m, totals.TotalPropertyAppraisedValue);
         Assert.Equal(451_400m, totals.TotalAccumulated);
+    }
+
+    [Fact]
+    public async Task Invested_totals_should_split_free_reserves_and_retained_profit_of_active_investments()
+    {
+        await using var fx = new TestDbFixture();
+        var reserve = await fx.SeedReserveAsync();
+        var (bank, type) = await fx.SeedInvestmentCatalogAsync();
+        await fx.CreditReserveAsync(reserve.Id, 700m);
+        await fx.CreditFreeAsync(300m);
+
+        var investment = await fx.Investments.CreateAsync(new CreateInvestmentRequest(
+            "CDB",
+            null,
+            DateTime.UtcNow.Date,
+            null,
+            bank.Id,
+            type.Id,
+            [
+                new ReserveAllocationDto(reserve.Id, 700m),
+                new ReserveAllocationDto(null, 300m),
+            ]));
+        await fx.Investments.UpdateCurrentAmountAsync(investment.Id, new UpdateCurrentAmountRequest(1100m));
+
+        var dashboard = new DashboardService(fx.AppDb, fx.Balance);
+        var totals = await dashboard.GetTotalsAsync();
+
+        Assert.Equal(1000m, totals.TotalInvested);
+        Assert.Equal(300m, totals.TotalInvestedFromFree);
+        Assert.Equal(700m, totals.TotalInvestedFromReserves);
+        Assert.Equal(100m, totals.RetainedProfit);
     }
 }
