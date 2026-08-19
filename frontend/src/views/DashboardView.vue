@@ -57,8 +57,14 @@ type UpcomingBillRow = UpcomingBill & { rowKey: string }
 
 const DONUT_COLORS = ['#38bdf8', '#4ade80', '#3b82f6', '#a855f7', '#fb7185', '#f59e0b', '#14b8a6']
 
+interface CommitmentItem {
+  name: string
+  value: number
+  color: string
+}
+
 const totals = ref<DashboardTotals | null>(null)
-const monthly = ref<{ month: string; freeCapital: number; investedCapital: number }[]>([])
+const monthly = ref<{ month: string; freeCapital: number; investedCapital: number; reservedCapital: number; propertyValue: number }[]>([])
 const distribution = ref<DistributionItem[]>([])
 const typeDistribution = ref<DistributionItem[]>([])
 const upcomingInvestments = ref<UpcomingInvestment[]>([])
@@ -82,6 +88,23 @@ const investido = computed(() => {
     totals.value.retainedProfit,
   )
 })
+
+const commitmentItems = computed<CommitmentItem[]>(() => {
+  if (!totals.value) return []
+  const t = totals.value
+  const metas = t.totalInvestmentGoals
+  const contasFixas = t.totalFixedCosts
+  const parcelamentos = t.totalOperationalCosts - t.totalFixedCosts
+  const committed = metas + contasFixas + parcelamentos
+  const disponivel = Math.max(0, t.totalFreeBalance - committed)
+  return [
+    { name: 'Metas de reservas', value: metas, color: '#3b82f6' },
+    { name: 'Contas fixas', value: contasFixas, color: '#f97316' },
+    { name: 'Parcelamentos', value: Math.max(0, parcelamentos), color: '#fb7185' },
+    { name: 'Disponível', value: disponivel, color: '#4ade80' },
+  ].filter((item) => item.value > 0)
+})
+
 function toastError(e: unknown, fallback: string) {
   toast.error(e instanceof Error ? e.message : fallback)
 }
@@ -107,7 +130,7 @@ const monthlyChartData = computed(() => ({
   labels: monthly.value.map((x) => x.month),
   datasets: [
     {
-      label: 'Investido',
+      label: 'Capital Investido',
       data: monthly.value.map((x) => x.investedCapital),
       backgroundColor: cssVar('--chart-blue', '#3b82f6'),
       stack: 'capital',
@@ -117,9 +140,29 @@ const monthlyChartData = computed(() => ({
       categoryPercentage: 0.6,
     },
     {
-      label: 'Livre',
+      label: 'Capital Reservado',
+      data: monthly.value.map((x) => x.reservedCapital),
+      backgroundColor: '#a855f7',
+      stack: 'capital',
+      borderSkipped: false,
+      borderRadius: { topLeft: 0, topRight: 0, bottomLeft: 0, bottomRight: 0 },
+      barPercentage: 0.45,
+      categoryPercentage: 0.6,
+    },
+    {
+      label: 'Capital Livre',
       data: monthly.value.map((x) => x.freeCapital),
       backgroundColor: cssVar('--success', '#4ade80'),
+      stack: 'capital',
+      borderSkipped: false,
+      borderRadius: { topLeft: 0, topRight: 0, bottomLeft: 0, bottomRight: 0 },
+      barPercentage: 0.45,
+      categoryPercentage: 0.6,
+    },
+    {
+      label: 'Valor em Imóveis',
+      data: monthly.value.map((x) => x.propertyValue),
+      backgroundColor: '#f59e0b',
       stack: 'capital',
       borderSkipped: false,
       borderRadius: { topLeft: 6, topRight: 6, bottomLeft: 0, bottomRight: 0 },
@@ -316,7 +359,7 @@ onMounted(async () => {
     </div>
     <div class="charts-stack">
       <div class="panel chart-main">
-        <h2>Capital livre x investido</h2>
+        <h2>Evolução do patrimônio</h2>
         <div class="chart-frame">
           <Bar
             v-if="monthly.length"
@@ -365,6 +408,26 @@ onMounted(async () => {
             </ul>
           </div>
           <p v-else class="muted">Nenhum investimento ativo.</p>
+        </div>
+        <div class="panel chart-side">
+          <h2>Comprometimento do saldo livre</h2>
+          <div v-if="commitmentItems.length" class="donut-layout">
+            <div class="donut-canvas-wrap">
+              <Doughnut :data="doughnutData(commitmentItems)" :options="doughnutOptions" />
+            </div>
+            <ul class="donut-legend">
+              <li
+                v-for="item in commitmentItems"
+                :key="item.name"
+                class="donut-legend-item"
+              >
+                <span class="donut-legend-swatch" :style="{ background: item.color }" />
+                <span class="donut-legend-label" :title="item.name">{{ item.name }}</span>
+                <span class="donut-legend-value">{{ formatMoney(item.value) }}</span>
+              </li>
+            </ul>
+          </div>
+          <p v-else class="muted">Nenhum dado disponível.</p>
         </div>
       </div>
     </div>
@@ -423,7 +486,7 @@ onMounted(async () => {
 
 .donuts-row {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 14rem), 1fr));
   gap: 1rem;
   min-width: 0;
 }

@@ -272,7 +272,7 @@ public record DashboardTotalsDto(
     decimal TotalInvestmentGoals,
     decimal TotalOperationalCosts);
 
-public record MonthlyCapitalDto(string Month, decimal FreeCapital, decimal InvestedCapital);
+public record MonthlyCapitalDto(string Month, decimal FreeCapital, decimal InvestedCapital, decimal ReservedCapital, decimal PropertyValue);
 public record ReserveDistributionDto(Guid ReserveId, string Name, decimal Value, string? Color);
 public record InvestmentTypeDistributionDto(Guid InvestmentTypeId, string Name, decimal Value);
 public record UpcomingInvestmentDto(Guid Id, string Name, DateTime EndDate, decimal CurrentAmount);

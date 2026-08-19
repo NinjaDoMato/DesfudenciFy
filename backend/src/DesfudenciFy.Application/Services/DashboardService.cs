@@ -73,10 +73,19 @@ public class DashboardService
             .Select(e => new { e.OccurredAt, e.Amount, e.Destination })
             .ToListAsync(cancellationToken);
 
+        var reserveInvestments = await _db.ReserveInvestments
+            .Select(ri => new { ri.DateCreated, ri.Amount, ri.ReserveId })
+            .ToListAsync(cancellationToken);
+
         var investments = await _db.Investments
             .Where(i => i.Status == InvestmentStatus.Active)
             .Select(i => new { i.StartDate, i.StartAmount })
             .ToListAsync(cancellationToken);
+
+        // Property value snapshot — no historical tracking, use current value for all months
+        var propertyValue = await _db.Properties
+            .Where(p => p.Status == PropertyStatus.Active)
+            .SumAsync(p => (decimal?)p.AppraisedValue, cancellationToken) ?? 0m;
 
         var start = DateTime.UtcNow.Date.AddMonths(-11);
         start = new DateTime(start.Year, start.Month, 1, 0, 0, 0, DateTimeKind.Utc);
@@ -97,9 +106,19 @@ public class DashboardService
 
             // Approximate invested capital as sum of active investments started before month end
             var invested = investments.Where(inv => inv.StartDate < monthEnd).Sum(inv => inv.StartAmount);
-            var freeCapital = free + Math.Max(0, reserve - invested);
 
-            result.Add(new MonthlyCapitalDto(monthStart.ToString("yyyy-MM"), freeCapital, invested));
+            // Reserve-invested split: how much of invested came from reserves vs free
+            var investedFromReserves = reserveInvestments
+                .Where(ri => ri.ReserveId != null && ri.DateCreated < monthEnd)
+                .Sum(ri => ri.Amount);
+            var investedFromFree = reserveInvestments
+                .Where(ri => ri.ReserveId == null && ri.DateCreated < monthEnd)
+                .Sum(ri => ri.Amount);
+
+            var reservedCapital = Math.Max(0m, reserve - investedFromReserves);
+            var freeCapital = Math.Max(0m, free - investedFromFree);
+
+            result.Add(new MonthlyCapitalDto(monthStart.ToString("yyyy-MM"), freeCapital, invested, reservedCapital, propertyValue));
         }
 
         return result;
