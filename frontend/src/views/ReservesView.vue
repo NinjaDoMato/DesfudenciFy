@@ -114,12 +114,12 @@ onMounted(async () => {
     </div>
     <div class="grid grid-totals">
       <div class="kpi">
-        <div class="label">Saldo livre</div>
-        <div class="value">{{ formatMoney(totals.saldoLivre) }}</div>
-      </div>
-      <div class="kpi">
         <div class="label">Saldo reservado</div>
         <div class="value">{{ formatMoney(totals.saldoReservado) }}</div>
+      </div>
+      <div class="kpi">
+        <div class="label">Saldo livre</div>
+        <div class="value">{{ formatMoney(totals.saldoLivre) }}</div>
       </div>
       <div class="kpi">
         <div class="label">Total acumulado</div>

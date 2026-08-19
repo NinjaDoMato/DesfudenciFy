@@ -82,6 +82,7 @@ public class PurchaseFlowTests
     {
         await using var fx = new TestDbFixture();
         var reserve = await fx.SeedReserveAsync();
+        await fx.CreditFreeAsync(200m);
         await fx.CreditReserveAsync(reserve.Id, 200m);
 
         var purchase = await fx.Purchases.CreateAsync(new CreatePurchaseRequest(
@@ -108,7 +109,7 @@ public class PurchaseFlowTests
         Assert.Null(reversed.PaidDate);
         Assert.Null(reversed.EntryId);
         Assert.Equal(200m, await fx.Balance.GetReserveAvailableAsync(reserve.Id));
-        Assert.Empty(await fx.Db.Entries.Where(e => e.Amount < 0).ToListAsync());
+        Assert.Empty(await fx.Db.Entries.Where(e => e.Amount < 0 && e.ReserveId == reserve.Id).ToListAsync());
     }
 
     [Fact]

@@ -137,14 +137,16 @@ describe('computeInvestidoTotals', () => {
   it('should keep invested split and lucro retido from the same sources as reservas and investimentos', () => {
     const totals = computeInvestidoTotals(1000, 300, 700, 100)
 
-    expect(totals.totalInvestido).toBe(1000)
+    expect(totals.totalInvestido).toBe(1100)
     expect(totals.investedFromFree).toBe(300)
     expect(totals.investedFromReserves).toBe(700)
     expect(totals.lucroRetido).toBe(100)
   })
 
   it('should keep negative lucro retido', () => {
-    expect(computeInvestidoTotals(500, 500, 0, -25.5).lucroRetido).toBe(-25.5)
+    const totals = computeInvestidoTotals(500, 500, 0, -25.5)
+    expect(totals.lucroRetido).toBe(-25.5)
+    expect(totals.totalInvestido).toBe(474.5)
   })
 })
 

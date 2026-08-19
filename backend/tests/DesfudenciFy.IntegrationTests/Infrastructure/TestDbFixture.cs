@@ -80,11 +80,19 @@ public sealed class TestDbFixture : IAsyncDisposable
 
     public async Task CreditReserveAsync(Guid reserveId, decimal amount, string observation = "Crédito reserva")
     {
+        var occurredAt = DateTime.UtcNow;
+        Db.Entries.Add(new Entry
+        {
+            Amount = -amount,
+            Observation = $"{observation} (saldo livre)",
+            OccurredAt = occurredAt,
+            Destination = EntryDestination.FreeBalance
+        });
         Db.Entries.Add(new Entry
         {
             Amount = amount,
             Observation = observation,
-            OccurredAt = DateTime.UtcNow,
+            OccurredAt = occurredAt,
             Destination = EntryDestination.Reserve,
             ReserveId = reserveId
         });

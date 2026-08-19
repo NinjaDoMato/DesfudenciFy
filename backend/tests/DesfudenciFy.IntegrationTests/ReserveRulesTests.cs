@@ -39,5 +39,6 @@ public class ReserveRulesTests
 
         await Assert.ThrowsAsync<NotFoundException>(() => fx.Reserves.GetAsync(reserve.Id));
         Assert.Empty(fx.Db.Entries.Where(e => e.ReserveId == reserve.Id).ToList());
+        Assert.Equal(0m, await fx.Balance.GetFreeBalanceAsync());
     }
 }

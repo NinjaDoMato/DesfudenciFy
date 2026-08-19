@@ -75,6 +75,15 @@ public class ReserveService
         }
 
         var entries = await _db.Entries.Where(e => e.ReserveId == id).ToListAsync(cancellationToken);
+        foreach (var entry in entries)
+        {
+            var companion = await EntryPairing.FindCompanionAsync(_db, entry, cancellationToken);
+            if (companion is not null)
+            {
+                _db.Remove(companion);
+            }
+        }
+
         _db.RemoveRange(entries);
         _db.Remove(reserve);
         await _db.SaveChangesAsync(cancellationToken);
@@ -146,8 +155,7 @@ public class EntryService
 
         if (request.Destination == EntryDestination.Reserve)
         {
-            _ = await _db.Reserves.FirstOrDefaultAsync(r => r.Id == request.ReserveId, cancellationToken)
-                ?? throw new NotFoundException("Reserva não encontrada.");
+            return await CreateReserveEntryAsync(request, cancellationToken);
         }
 
         var entry = new Entry
@@ -155,28 +163,88 @@ public class EntryService
             Amount = request.Amount,
             Observation = request.Observation?.Trim() ?? string.Empty,
             OccurredAt = request.OccurredAt?.ToUniversalTime() ?? DateTime.UtcNow,
-            Destination = request.Destination,
-            ReserveId = request.Destination == EntryDestination.Reserve ? request.ReserveId : null
+            Destination = EntryDestination.FreeBalance
         };
 
         _db.Add(entry);
         await _db.SaveChangesAsync(cancellationToken);
 
-        string? reserveName = null;
-        if (entry.ReserveId.HasValue)
-        {
-            reserveName = await _db.Reserves.Where(r => r.Id == entry.ReserveId).Select(r => r.Name).FirstAsync(cancellationToken);
-        }
-
-        return new EntryDto(entry.Id, entry.Amount, entry.Observation, entry.OccurredAt, entry.Destination, entry.ReserveId, reserveName);
+        return new EntryDto(entry.Id, entry.Amount, entry.Observation, entry.OccurredAt, entry.Destination, null, null);
     }
 
     public async Task DeleteAsync(Guid id, CancellationToken cancellationToken = default)
     {
         var entry = await _db.Entries.FirstOrDefaultAsync(e => e.Id == id, cancellationToken)
                     ?? throw new NotFoundException("Lançamento não encontrado.");
+
+        var companion = await EntryPairing.FindCompanionAsync(_db, entry, cancellationToken);
+        if (companion is not null)
+        {
+            _db.Remove(companion);
+        }
+
         _db.Remove(entry);
         await _db.SaveChangesAsync(cancellationToken);
+    }
+
+    private async Task<EntryDto> CreateReserveEntryAsync(CreateEntryRequest request, CancellationToken cancellationToken)
+    {
+        _ = await _db.Reserves.FirstOrDefaultAsync(r => r.Id == request.ReserveId, cancellationToken)
+            ?? throw new NotFoundException("Reserva não encontrada.");
+
+        if (request.Amount == 0)
+        {
+            throw new AppException("O valor deve ser diferente de zero.");
+        }
+
+        var occurredAt = request.OccurredAt?.ToUniversalTime() ?? DateTime.UtcNow;
+        var observation = request.Observation?.Trim() ?? string.Empty;
+        var freeObservation = string.IsNullOrEmpty(observation)
+            ? "Alocação (saldo livre)"
+            : $"{observation} (saldo livre)";
+
+        if (request.Amount > 0)
+        {
+            await _balance.EnsureAvailableAsync(EntryDestination.FreeBalance, null, request.Amount, cancellationToken);
+            _db.Add(new Entry
+            {
+                Amount = -request.Amount,
+                Observation = freeObservation,
+                OccurredAt = occurredAt,
+                Destination = EntryDestination.FreeBalance
+            });
+        }
+        else
+        {
+            var absAmount = Math.Abs(request.Amount);
+            await _balance.EnsureAvailableAsync(EntryDestination.Reserve, request.ReserveId, absAmount, cancellationToken);
+            _db.Add(new Entry
+            {
+                Amount = absAmount,
+                Observation = freeObservation,
+                OccurredAt = occurredAt,
+                Destination = EntryDestination.FreeBalance
+            });
+        }
+
+        var entry = new Entry
+        {
+            Amount = request.Amount,
+            Observation = observation,
+            OccurredAt = occurredAt,
+            Destination = EntryDestination.Reserve,
+            ReserveId = request.ReserveId
+        };
+
+        _db.Add(entry);
+        await _db.SaveChangesAsync(cancellationToken);
+
+        var reserveName = await _db.Reserves
+            .Where(r => r.Id == entry.ReserveId)
+            .Select(r => r.Name)
+            .FirstAsync(cancellationToken);
+
+        return new EntryDto(entry.Id, entry.Amount, entry.Observation, entry.OccurredAt, entry.Destination, entry.ReserveId, reserveName);
     }
 
     public async Task TransferAsync(TransferRequest request, CancellationToken cancellationToken = default)

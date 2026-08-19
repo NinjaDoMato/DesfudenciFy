@@ -86,9 +86,9 @@ public class DashboardTotalsTests
         var dashboard = new DashboardService(fx.AppDb, fx.Balance);
         var totals = await dashboard.GetTotalsAsync();
 
-        Assert.Equal(1_400m, totals.TotalFinancialCapital);
+        Assert.Equal(1_000m, totals.TotalFinancialCapital);
         Assert.Equal(450_000m, totals.TotalPropertyAppraisedValue);
-        Assert.Equal(451_400m, totals.TotalAccumulated);
+        Assert.Equal(451_000m, totals.TotalAccumulated);
     }
 
     [Fact]
@@ -97,8 +97,8 @@ public class DashboardTotalsTests
         await using var fx = new TestDbFixture();
         var reserve = await fx.SeedReserveAsync();
         var (bank, type) = await fx.SeedInvestmentCatalogAsync();
+        await fx.CreditFreeAsync(1000m);
         await fx.CreditReserveAsync(reserve.Id, 700m);
-        await fx.CreditFreeAsync(300m);
 
         var investment = await fx.Investments.CreateAsync(new CreateInvestmentRequest(
             "CDB",

@@ -84,7 +84,7 @@ export function computePatrimonioTotals(
 
 /**
  * Dashboard "Investido":
- * total = ReserveInvestment amounts (same as Reservas "Total investido").
+ * total = principal investido + lucro retido (= valor atual dos investimentos ativos).
  * Saldo livre / Reservas match computeReserveTotals investedFromFree / investedFromReserves.
  * Lucro retido = computeInvestmentTotals on active investments (current − start).
  */
@@ -94,11 +94,12 @@ export function computeInvestidoTotals(
   investedFromReserves: number,
   lucroRetido: number,
 ): InvestidoTotals {
+  const lucro = roundMoney(lucroRetido)
   return {
-    totalInvestido: roundMoney(totalInvested),
+    totalInvestido: roundMoney(totalInvested + lucro),
     investedFromFree: roundMoney(investedFromFree),
     investedFromReserves: roundMoney(investedFromReserves),
-    lucroRetido: roundMoney(lucroRetido),
+    lucroRetido: lucro,
   }
 }
 

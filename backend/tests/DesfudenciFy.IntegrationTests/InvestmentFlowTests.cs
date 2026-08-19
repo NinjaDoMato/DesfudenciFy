@@ -67,9 +67,9 @@ public class InvestmentFlowTests
         var reserveA = await fx.SeedReserveAsync("A");
         var reserveB = await fx.SeedReserveAsync("B");
         var (bank, type) = await fx.SeedInvestmentCatalogAsync();
+        await fx.CreditFreeAsync(1200m);
         await fx.CreditReserveAsync(reserveA.Id, 700m);
         await fx.CreditReserveAsync(reserveB.Id, 300m);
-        await fx.CreditFreeAsync(200m);
 
         var investment = await fx.Investments.CreateAsync(new CreateInvestmentRequest(
             "Mix",
