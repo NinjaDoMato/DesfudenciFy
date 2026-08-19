@@ -132,7 +132,7 @@ const monthlyChartData = computed(() => ({
     {
       label: 'Capital Investido',
       data: monthly.value.map((x) => x.investedCapital),
-      backgroundColor: cssVar('--chart-blue', '#3b82f6'),
+      backgroundColor: cssVar('--success', '#4ade80'),
       stack: 'capital',
       borderSkipped: false,
       borderRadius: { topLeft: 0, topRight: 0, bottomLeft: 6, bottomRight: 6 },
@@ -142,7 +142,7 @@ const monthlyChartData = computed(() => ({
     {
       label: 'Capital Reservado',
       data: monthly.value.map((x) => x.reservedCapital),
-      backgroundColor: '#a855f7',
+      backgroundColor: cssVar('--chart-blue', '#3b82f6'),
       stack: 'capital',
       borderSkipped: false,
       borderRadius: { topLeft: 0, topRight: 0, bottomLeft: 0, bottomRight: 0 },
@@ -152,7 +152,7 @@ const monthlyChartData = computed(() => ({
     {
       label: 'Capital Livre',
       data: monthly.value.map((x) => x.freeCapital),
-      backgroundColor: cssVar('--success', '#4ade80'),
+      backgroundColor: '#f59e0b',
       stack: 'capital',
       borderSkipped: false,
       borderRadius: { topLeft: 0, topRight: 0, bottomLeft: 0, bottomRight: 0 },
@@ -162,7 +162,7 @@ const monthlyChartData = computed(() => ({
     {
       label: 'Valor em Imóveis',
       data: monthly.value.map((x) => x.propertyValue),
-      backgroundColor: '#f59e0b',
+      backgroundColor: '#14b8a6',
       stack: 'capital',
       borderSkipped: false,
       borderRadius: { topLeft: 6, topRight: 6, bottomLeft: 0, bottomRight: 0 },
@@ -295,7 +295,7 @@ onMounted(async () => {
         <p class="muted">Visão geral do capital livre, investido e compromissos.</p>
       </div>
     </div>
-    <div v-if="totals && patrimonio && investido" class="grid grid-totals-lead">
+    <div v-if="totals && patrimonio && investido" class="grid grid-totals-lead dashboard-totals">
       <div class="kpi">
         <div class="label">Patrimônio acumulado</div>
         <div class="kpi-body">
@@ -474,6 +474,10 @@ onMounted(async () => {
 </template>
 
 <style scoped>
+.dashboard-totals .kpi-body {
+  flex-wrap: nowrap;
+}
+
 .charts-stack {
   display: grid;
   gap: 1rem;
