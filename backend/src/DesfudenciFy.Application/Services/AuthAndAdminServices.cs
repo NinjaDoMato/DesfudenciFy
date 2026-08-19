@@ -1,4 +1,5 @@
-﻿using DesfudenciFy.Application.Abstractions;
+﻿using System.Security.Cryptography;
+using DesfudenciFy.Application.Abstractions;
 using DesfudenciFy.Application.Common;
 using DesfudenciFy.Application.DTOs;
 using DesfudenciFy.Domain.Entities;
@@ -30,14 +31,44 @@ public class AuthService
         }
 
         user.LastLoginAt = DateTime.UtcNow;
+        var refreshToken = GenerateRefreshToken();
+        user.RefreshToken = refreshToken;
+        user.RefreshTokenExpiresAt = DateTime.UtcNow.AddDays(30);
         await _db.SaveChangesAsync(cancellationToken);
 
         return new LoginResponse(
             _jwtTokenService.GenerateToken(user),
+            refreshToken,
             user.Id,
             user.Email,
             user.FullName,
             user.Role.ToString());
+    }
+
+    public async Task<RefreshTokenResponse> RefreshAsync(RefreshTokenRequest request, CancellationToken cancellationToken = default)
+    {
+        var user = await _db.Users.FirstOrDefaultAsync(
+            u => u.RefreshToken == request.RefreshToken, cancellationToken);
+
+        if (user is null || !user.IsActive
+            || user.RefreshTokenExpiresAt is null
+            || user.RefreshTokenExpiresAt < DateTime.UtcNow)
+        {
+            throw new UnauthorizedAppException("Sessão expirada. Faça login novamente.");
+        }
+
+        var newRefreshToken = GenerateRefreshToken();
+        user.RefreshToken = newRefreshToken;
+        user.RefreshTokenExpiresAt = DateTime.UtcNow.AddDays(30);
+        await _db.SaveChangesAsync(cancellationToken);
+
+        return new RefreshTokenResponse(_jwtTokenService.GenerateToken(user), newRefreshToken);
+    }
+
+    private static string GenerateRefreshToken()
+    {
+        var bytes = RandomNumberGenerator.GetBytes(64);
+        return Convert.ToBase64String(bytes);
     }
 }
 

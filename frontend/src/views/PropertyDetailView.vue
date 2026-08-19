@@ -815,7 +815,7 @@ watch(
                   :rows="property.rentPayments"
                   :columns="rentColumns"
                   row-key="id"
-                  :paginated="false"
+                  :page-size="5"
                   initial-sort-key="paidAt"
                   empty-text="Nenhum aluguel registrado."
                 >
@@ -872,7 +872,7 @@ watch(
                   :rows="property.expenses"
                   :columns="expenseColumns"
                   row-key="id"
-                  :paginated="false"
+                  :page-size="5"
                   initial-sort-key="occurredAt"
                   empty-text="Nenhum gasto registrado."
                 >

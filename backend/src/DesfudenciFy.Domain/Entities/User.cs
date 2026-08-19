@@ -11,4 +11,6 @@ public class User : BaseEntity
     public bool IsActive { get; set; } = true;
     public UserRole Role { get; set; } = UserRole.User;
     public DateTime? LastLoginAt { get; set; }
+    public string? RefreshToken { get; set; }
+    public DateTime? RefreshTokenExpiresAt { get; set; }
 }

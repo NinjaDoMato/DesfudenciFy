@@ -18,6 +18,11 @@ public class AuthController : ControllerBase
     public Task<LoginResponse> Login([FromBody] LoginRequest request, CancellationToken cancellationToken) =>
         _authService.LoginAsync(request, cancellationToken);
 
+    [HttpPost("refresh")]
+    [AllowAnonymous]
+    public Task<RefreshTokenResponse> Refresh([FromBody] RefreshTokenRequest request, CancellationToken cancellationToken) =>
+        _authService.RefreshAsync(request, cancellationToken);
+
     [HttpPost("logout")]
     [Authorize]
     public IActionResult Logout() => Ok(new { message = "Logged out" });

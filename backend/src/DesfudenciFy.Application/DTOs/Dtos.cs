@@ -3,7 +3,9 @@ using DesfudenciFy.Domain.Enums;
 namespace DesfudenciFy.Application.DTOs;
 
 public record LoginRequest(string Email, string Password);
-public record LoginResponse(string Token, Guid UserId, string Email, string FullName, string Role);
+public record LoginResponse(string Token, string RefreshToken, Guid UserId, string Email, string FullName, string Role);
+public record RefreshTokenRequest(string RefreshToken);
+public record RefreshTokenResponse(string Token, string RefreshToken);
 
 public record UserDto(Guid Id, string Email, string FullName, bool IsActive, string Role, DateTime? LastLoginAt);
 public record CreateUserRequest(string Email, string Password, string FullName, string Role);
@@ -266,7 +268,9 @@ public record DashboardTotalsDto(
     decimal TotalMonthlyCosts,
     decimal TotalInvestedFromFree,
     decimal TotalInvestedFromReserves,
-    decimal RetainedProfit);
+    decimal RetainedProfit,
+    decimal TotalInvestmentGoals,
+    decimal TotalOperationalCosts);
 
 public record MonthlyCapitalDto(string Month, decimal FreeCapital, decimal InvestedCapital);
 public record ReserveDistributionDto(Guid ReserveId, string Name, decimal Value, string? Color);

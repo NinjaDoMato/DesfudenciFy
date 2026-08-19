@@ -293,8 +293,12 @@ onMounted(async () => {
               <strong :class="moneyPolarity(totals.totalIncome)">{{ formatMoney(totals.totalIncome) }}</strong>
             </div>
             <div class="kpi-break-row">
-              <span>Total de custos</span>
-              <strong :class="moneyPolarity(-totals.totalMonthlyCosts)">{{ formatMoney(totals.totalMonthlyCosts) }}</strong>
+              <span>Total de Custos</span>
+              <strong :class="moneyPolarity(-totals.totalOperationalCosts)">{{ formatMoney(totals.totalOperationalCosts) }}</strong>
+            </div>
+            <div class="kpi-break-row">
+              <span>Metas de Investimento</span>
+              <strong class="accent">{{ formatMoney(totals.totalInvestmentGoals) }}</strong>
             </div>
           </div>
         </div>
@@ -409,5 +413,9 @@ onMounted(async () => {
   .chart-frame-doughnut {
     max-width: 240px;
   }
+}
+
+.accent {
+  color: var(--accent);
 }
 </style>

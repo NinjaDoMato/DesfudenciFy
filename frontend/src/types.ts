@@ -3,6 +3,7 @@ export type EntryDestination = 'FreeBalance' | 'Reserve'
 
 export interface LoginResponse {
   token: string
+  refreshToken: string
   userId: string
   email: string
   fullName: string
@@ -201,6 +202,8 @@ export interface DashboardTotals {
   totalInvestedFromFree: number
   totalInvestedFromReserves: number
   retainedProfit: number
+  totalInvestmentGoals: number
+  totalOperationalCosts: number
 }
 
 export { formatMoney, moneyPolarity, parseMoneyInput } from '@/utils/money'

@@ -45,6 +45,7 @@ public class DashboardService
             .Where(p => p.Status == PropertyStatus.Active)
             .SumAsync(p => (decimal?)p.AppraisedValue, cancellationToken) ?? 0m;
         var monthlyCosts = monthlyGoal + fixedCosts + activeInstallments;
+        var operationalCosts = fixedCosts + activeInstallments;
 
         return new DashboardTotalsDto(
             TotalAccumulated: financialCapital + propertyAppraised,
@@ -60,7 +61,9 @@ public class DashboardService
             TotalMonthlyCosts: monthlyCosts,
             TotalInvestedFromFree: investedFromFree,
             TotalInvestedFromReserves: investedFromReserves,
-            RetainedProfit: retainedProfit);
+            RetainedProfit: retainedProfit,
+            TotalInvestmentGoals: monthlyGoal,
+            TotalOperationalCosts: operationalCosts);
     }
 
     public async Task<IReadOnlyList<MonthlyCapitalDto>> GetMonthlyCapitalAsync(CancellationToken cancellationToken = default)
