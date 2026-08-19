@@ -82,19 +82,40 @@ public class DashboardService
             .Select(i => new { i.StartDate, i.StartAmount })
             .ToListAsync(cancellationToken);
 
-        // Property value snapshot — no historical tracking, use current value for all months
-        var propertyValue = await _db.Properties
+        // Time-series: compute "Valor em Imóveis" progressively per month
+        // Only include properties that are still "active" (not sold) and start contributing from
+        // their creation date (DateCreated) based on the month bucket end boundary.
+        var activeProperties = await _db.Properties
             .Where(p => p.Status == PropertyStatus.Active)
-            .SumAsync(p => (decimal?)p.AppraisedValue, cancellationToken) ?? 0m;
+            .Select(p => new { p.AppraisedValue, p.DateCreated })
+            .ToListAsync(cancellationToken);
+
+        var activePropertiesByCreatedDate = activeProperties
+            .Select(p => new { p.AppraisedValue, CreatedUtcDate = p.DateCreated.ToUniversalTime().Date })
+            .OrderBy(p => p.CreatedUtcDate)
+            .ToList();
 
         var start = DateTime.UtcNow.Date.AddMonths(-11);
         start = new DateTime(start.Year, start.Month, 1, 0, 0, 0, DateTimeKind.Utc);
 
         var result = new List<MonthlyCapitalDto>();
+        decimal accumulatedPropertyValue = 0m;
+        var propertyIndex = 0;
         for (var i = 0; i < 12; i++)
         {
             var monthStart = start.AddMonths(i);
             var monthEnd = monthStart.AddMonths(1);
+            var monthEndUtcDate = monthEnd.ToUniversalTime().Date;
+
+            // Include a property in month X when it's created before the end of the bucket.
+            // Using a strict "<" means properties created exactly at monthEnd are counted
+            // starting from the next month.
+            while (propertyIndex < activePropertiesByCreatedDate.Count
+                   && activePropertiesByCreatedDate[propertyIndex].CreatedUtcDate < monthEndUtcDate)
+            {
+                accumulatedPropertyValue += activePropertiesByCreatedDate[propertyIndex].AppraisedValue;
+                propertyIndex++;
+            }
 
             var free = entries
                 .Where(e => e.Destination == EntryDestination.FreeBalance && e.OccurredAt < monthEnd)
@@ -118,7 +139,7 @@ public class DashboardService
             var reservedCapital = Math.Max(0m, reserve - investedFromReserves);
             var freeCapital = Math.Max(0m, free - investedFromFree);
 
-            result.Add(new MonthlyCapitalDto(monthStart.ToString("yyyy-MM"), freeCapital, invested, reservedCapital, propertyValue));
+            result.Add(new MonthlyCapitalDto(monthStart.ToString("yyyy-MM"), freeCapital, invested, reservedCapital, accumulatedPropertyValue));
         }
 
         return result;
