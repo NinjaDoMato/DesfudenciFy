@@ -113,6 +113,8 @@ const monthlyChartData = computed(() => ({
       stack: 'capital',
       borderSkipped: false,
       borderRadius: { topLeft: 0, topRight: 0, bottomLeft: 6, bottomRight: 6 },
+      barPercentage: 0.45,
+      categoryPercentage: 0.6,
     },
     {
       label: 'Livre',
@@ -121,6 +123,8 @@ const monthlyChartData = computed(() => ({
       stack: 'capital',
       borderSkipped: false,
       borderRadius: { topLeft: 6, topRight: 6, bottomLeft: 0, bottomRight: 0 },
+      barPercentage: 0.45,
+      categoryPercentage: 0.6,
     },
   ],
 }))
@@ -189,9 +193,15 @@ const doughnutOptions = computed(() => ({
   maintainAspectRatio: false,
   cutout: '62%',
   plugins: {
-    legend: {
-      position: 'bottom' as const,
-      labels: { color: cssVar('--chart-muted', '#8a8aa0'), boxWidth: 12, padding: 12 },
+    legend: { display: false },
+    tooltip: {
+      callbacks: {
+        label(context: { label?: string; parsed: number; dataset: { data: number[] } }) {
+          const total = context.dataset.data.reduce((a, b) => a + b, 0)
+          const pct = total > 0 ? ((context.parsed / total) * 100).toFixed(1) : '0.0'
+          return ` ${context.label ?? ''}: ${formatMoney(context.parsed)} (${pct}%)`
+        },
+      },
     },
   },
 }))
@@ -318,15 +328,41 @@ onMounted(async () => {
       <div class="donuts-row">
         <div class="panel chart-side">
           <h2>Distribuição por reserva</h2>
-          <div v-if="distribution.length" class="chart-frame chart-frame-doughnut">
-            <Doughnut :data="doughnutData(distribution)" :options="doughnutOptions" />
+          <div v-if="distribution.length" class="donut-layout">
+            <div class="donut-canvas-wrap">
+              <Doughnut :data="doughnutData(distribution)" :options="doughnutOptions" />
+            </div>
+            <ul class="donut-legend">
+              <li
+                v-for="(item, i) in distribution"
+                :key="item.name"
+                class="donut-legend-item"
+              >
+                <span class="donut-legend-swatch" :style="{ background: item.color || DONUT_COLORS[i % DONUT_COLORS.length] }" />
+                <span class="donut-legend-label" :title="item.name">{{ item.name }}</span>
+                <span class="donut-legend-value">{{ formatMoney(item.value) }}</span>
+              </li>
+            </ul>
           </div>
           <p v-else class="muted">Nenhuma reserva cadastrada.</p>
         </div>
         <div class="panel chart-side">
           <h2>Tipo de investimento</h2>
-          <div v-if="typeDistribution.length" class="chart-frame chart-frame-doughnut">
-            <Doughnut :data="doughnutData(typeDistribution)" :options="doughnutOptions" />
+          <div v-if="typeDistribution.length" class="donut-layout">
+            <div class="donut-canvas-wrap">
+              <Doughnut :data="doughnutData(typeDistribution)" :options="doughnutOptions" />
+            </div>
+            <ul class="donut-legend">
+              <li
+                v-for="(item, i) in typeDistribution"
+                :key="item.name"
+                class="donut-legend-item"
+              >
+                <span class="donut-legend-swatch" :style="{ background: item.color || DONUT_COLORS[i % DONUT_COLORS.length] }" />
+                <span class="donut-legend-label" :title="item.name">{{ item.name }}</span>
+                <span class="donut-legend-value">{{ formatMoney(item.value) }}</span>
+              </li>
+            </ul>
           </div>
           <p v-else class="muted">Nenhum investimento ativo.</p>
         </div>
@@ -402,16 +438,78 @@ onMounted(async () => {
   width: 100%;
 }
 
-.chart-frame-doughnut {
-  height: 240px;
-  max-width: 280px;
-  width: 100%;
-  margin: 0 auto;
+.donut-layout {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  min-height: 0;
 }
 
-@media (max-width: 640px) {
-  .chart-frame-doughnut {
-    max-width: 240px;
+.donut-canvas-wrap {
+  flex: 0 0 160px;
+  height: 160px;
+  position: relative;
+}
+
+.donut-legend {
+  flex: 1 1 0;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 160px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.donut-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.8rem;
+  min-width: 0;
+}
+
+.donut-legend-swatch {
+  flex: 0 0 10px;
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+}
+
+.donut-legend-label {
+  flex: 1 1 0;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--muted);
+}
+
+.donut-legend-value {
+  flex: 0 0 auto;
+  font-weight: 600;
+  white-space: nowrap;
+  font-size: 0.78rem;
+}
+
+@media (max-width: 480px) {
+  .donut-layout {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .donut-canvas-wrap {
+    flex: 0 0 auto;
+    width: 160px;
+  }
+
+  .donut-legend {
+    max-height: 120px;
+    width: 100%;
   }
 }
 
