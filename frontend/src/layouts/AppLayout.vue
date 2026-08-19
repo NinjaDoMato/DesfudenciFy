@@ -10,6 +10,19 @@ const theme = useThemeStore()
 const router = useRouter()
 const route = useRoute()
 
+const SIDEBAR_COLLAPSED_KEY = 'sidebarCollapsed'
+const sidebarCollapsed = ref<boolean>(false)
+
+if (typeof window !== 'undefined') {
+  try {
+    const raw = window.localStorage.getItem(SIDEBAR_COLLAPSED_KEY)
+    if (raw === 'true') sidebarCollapsed.value = true
+    if (raw === 'false') sidebarCollapsed.value = false
+  } catch {
+    // Ignore persistence errors (private mode, disabled storage, etc.)
+  }
+}
+
 const openGroups = ref<Record<string, boolean>>({
   capital: true,
   budget: true,
@@ -38,27 +51,64 @@ function toggleGroup(key: string) {
   openGroups.value[key] = !openGroups.value[key]
 }
 
+function toggleSidebar() {
+  sidebarCollapsed.value = !sidebarCollapsed.value
+}
+
 async function onLogout() {
   await auth.logout()
   await router.push({ name: 'login' })
 }
+
+watch(sidebarCollapsed, (val) => {
+  try {
+    if (typeof window === 'undefined') return
+    window.localStorage.setItem(SIDEBAR_COLLAPSED_KEY, val ? 'true' : 'false')
+  } catch {
+    // Ignore persistence errors
+  }
+})
 </script>
 
 <template>
-  <div class="shell">
-    <aside class="sidebar">
-      <div class="brand">
-        <span class="brand-mark">DF</span>
-        <div>
-          <strong>DesfudenciFy</strong>
-          <p class="muted">Controle financeiro</p>
+  <div class="shell" :class="{ collapsed: sidebarCollapsed }">
+    <aside class="sidebar" :class="{ collapsed: sidebarCollapsed }">
+      <div class="brand-row">
+        <div class="brand">
+          <span class="brand-mark" aria-hidden="true">DF</span>
+          <div class="brand-text">
+            <strong>DesfudenciFy</strong>
+            <p class="muted">Controle financeiro</p>
+          </div>
         </div>
+
+        <button
+          class="sidebar-toggle-btn"
+          type="button"
+          :aria-label="sidebarCollapsed ? 'Expandir menu' : 'Recolher menu'"
+          :aria-expanded="!sidebarCollapsed"
+          aria-controls="sidebar-nav"
+          @click="toggleSidebar"
+        >
+          <svg
+            class="sidebar-toggle-icon"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.8"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <path d="M9 18l6-6-6-6" />
+          </svg>
+        </button>
       </div>
 
-      <nav>
-        <RouterLink class="nav-link" to="/">
+      <nav id="sidebar-nav">
+        <RouterLink class="nav-link" to="/" :title="sidebarCollapsed ? 'Dashboard' : undefined">
           <NavIcon name="dashboard" />
-          <span>Dashboard</span>
+          <span class="nav-text">Dashboard</span>
         </RouterLink>
 
         <div class="nav-group">
@@ -66,30 +116,31 @@ async function onLogout() {
             class="nav-group-toggle"
             type="button"
             :aria-expanded="openGroups.capital"
+            :title="sidebarCollapsed ? 'Capital' : undefined"
             @click="toggleGroup('capital')"
           >
             <span class="nav-label">
               <NavIcon name="capital" />
-              <span>Capital</span>
+              <span class="nav-text">Capital</span>
             </span>
             <span class="chevron" :class="{ open: openGroups.capital }">▾</span>
           </button>
           <div v-show="openGroups.capital" class="nav-group-items">
-            <RouterLink class="nav-link" to="/reserves">
+            <RouterLink class="nav-link" to="/reserves" :title="sidebarCollapsed ? 'Reservas' : undefined">
               <NavIcon name="reserves" />
-              <span>Reservas</span>
+              <span class="nav-text">Reservas</span>
             </RouterLink>
-            <RouterLink class="nav-link" to="/investments">
+            <RouterLink class="nav-link" to="/investments" :title="sidebarCollapsed ? 'Investimentos' : undefined">
               <NavIcon name="investments" />
-              <span>Investimentos</span>
+              <span class="nav-text">Investimentos</span>
             </RouterLink>
-            <RouterLink class="nav-link" to="/properties">
+            <RouterLink class="nav-link" to="/properties" :title="sidebarCollapsed ? 'Imóveis' : undefined">
               <NavIcon name="properties" />
-              <span>Imóveis</span>
+              <span class="nav-text">Imóveis</span>
             </RouterLink>
-            <RouterLink class="nav-link" to="/entries">
+            <RouterLink class="nav-link" to="/entries" :title="sidebarCollapsed ? 'Extrato' : undefined">
               <NavIcon name="entries" />
-              <span>Extrato</span>
+              <span class="nav-text">Extrato</span>
             </RouterLink>
           </div>
         </div>
@@ -99,26 +150,27 @@ async function onLogout() {
             class="nav-group-toggle"
             type="button"
             :aria-expanded="openGroups.budget"
+            :title="sidebarCollapsed ? 'Orçamento' : undefined"
             @click="toggleGroup('budget')"
           >
             <span class="nav-label">
               <NavIcon name="budget" />
-              <span>Orçamento</span>
+              <span class="nav-text">Orçamento</span>
             </span>
             <span class="chevron" :class="{ open: openGroups.budget }">▾</span>
           </button>
           <div v-show="openGroups.budget" class="nav-group-items">
-            <RouterLink class="nav-link" to="/income">
+            <RouterLink class="nav-link" to="/income" :title="sidebarCollapsed ? 'Entradas' : undefined">
               <NavIcon name="income" />
-              <span>Entradas</span>
+              <span class="nav-text">Entradas</span>
             </RouterLink>
-            <RouterLink class="nav-link" to="/fixed-costs">
+            <RouterLink class="nav-link" to="/fixed-costs" :title="sidebarCollapsed ? 'Contas fixas' : undefined">
               <NavIcon name="fixed-costs" />
-              <span>Contas fixas</span>
+              <span class="nav-text">Contas fixas</span>
             </RouterLink>
-            <RouterLink class="nav-link" to="/purchases">
+            <RouterLink class="nav-link" to="/purchases" :title="sidebarCollapsed ? 'Parcelamentos' : undefined">
               <NavIcon name="purchases" />
-              <span>Parcelamentos</span>
+              <span class="nav-text">Parcelamentos</span>
             </RouterLink>
           </div>
         </div>
@@ -128,18 +180,19 @@ async function onLogout() {
             class="nav-group-toggle"
             type="button"
             :aria-expanded="openGroups.admin"
+            :title="sidebarCollapsed ? 'Admin' : undefined"
             @click="toggleGroup('admin')"
           >
             <span class="nav-label">
               <NavIcon name="admin" />
-              <span>Admin</span>
+              <span class="nav-text">Admin</span>
             </span>
             <span class="chevron" :class="{ open: openGroups.admin }">▾</span>
           </button>
           <div v-show="openGroups.admin" class="nav-group-items">
-            <RouterLink class="nav-link" to="/admin/users">
+            <RouterLink class="nav-link" to="/admin/users" :title="sidebarCollapsed ? 'Usuários' : undefined">
               <NavIcon name="users" />
-              <span>Usuários</span>
+              <span class="nav-text">Usuários</span>
             </RouterLink>
 
             <div class="nav-subgroup">
@@ -147,30 +200,47 @@ async function onLogout() {
                 class="nav-subgroup-toggle"
                 type="button"
                 :aria-expanded="openGroups.settings"
+                :title="sidebarCollapsed ? 'Configurações' : undefined"
                 @click="toggleGroup('settings')"
               >
                 <span class="nav-label">
                   <NavIcon name="settings" />
-                  <span>Configurações</span>
+                  <span class="nav-text">Configurações</span>
                 </span>
                 <span class="chevron" :class="{ open: openGroups.settings }">▾</span>
               </button>
               <div v-show="openGroups.settings" class="nav-subgroup-items">
-                <RouterLink class="nav-link nested" to="/admin/investment-types">
+                <RouterLink
+                  class="nav-link nested"
+                  to="/admin/investment-types"
+                  :title="sidebarCollapsed ? 'Tipos de Investimentos' : undefined"
+                >
                   <NavIcon name="investment-types" />
-                  <span>Tipos de Investimentos</span>
+                  <span class="nav-text">Tipos de Investimentos</span>
                 </RouterLink>
-                <RouterLink class="nav-link nested" to="/admin/income-types">
+                <RouterLink
+                  class="nav-link nested"
+                  to="/admin/income-types"
+                  :title="sidebarCollapsed ? 'Tipos de Entrada' : undefined"
+                >
                   <NavIcon name="income" />
-                  <span>Tipos de Entrada</span>
+                  <span class="nav-text">Tipos de Entrada</span>
                 </RouterLink>
-                <RouterLink class="nav-link nested" to="/admin/cost-types">
+                <RouterLink
+                  class="nav-link nested"
+                  to="/admin/cost-types"
+                  :title="sidebarCollapsed ? 'Tipos de Custo' : undefined"
+                >
                   <NavIcon name="cost-types" />
-                  <span>Tipos de Custo</span>
+                  <span class="nav-text">Tipos de Custo</span>
                 </RouterLink>
-                <RouterLink class="nav-link nested" to="/admin/bank-accounts">
+                <RouterLink
+                  class="nav-link nested"
+                  to="/admin/bank-accounts"
+                  :title="sidebarCollapsed ? 'Contas Bancárias' : undefined"
+                >
                   <NavIcon name="bank-accounts" />
-                  <span>Contas Bancárias</span>
+                  <span class="nav-text">Contas Bancárias</span>
                 </RouterLink>
               </div>
             </div>
@@ -179,11 +249,16 @@ async function onLogout() {
       </nav>
 
       <div class="sidebar-footer">
-        <div>
+        <div class="footer-user-text">
           <strong>{{ auth.fullName }}</strong>
           <p class="muted">{{ auth.role }}</p>
         </div>
-        <button class="btn secondary logout-btn" type="button" @click="theme.toggle()">
+        <button
+          class="btn secondary logout-btn"
+          type="button"
+          :title="sidebarCollapsed ? theme.label : undefined"
+          @click="theme.toggle()"
+        >
           <svg class="theme-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
             <template v-if="theme.isDark">
               <circle cx="12" cy="12" r="4" />
@@ -193,11 +268,16 @@ async function onLogout() {
               <path d="M21 14.5A8.5 8.5 0 0 1 9.5 3 7 7 0 1 0 21 14.5Z" />
             </template>
           </svg>
-          <span>{{ theme.label }}</span>
+          <span class="nav-text">{{ theme.label }}</span>
         </button>
-        <button class="btn secondary logout-btn" type="button" @click="onLogout">
+        <button
+          class="btn secondary logout-btn"
+          type="button"
+          :title="sidebarCollapsed ? 'Sair' : undefined"
+          @click="onLogout"
+        >
           <NavIcon name="logout" />
-          <span>Sair</span>
+          <span class="nav-text">Sair</span>
         </button>
       </div>
     </aside>
@@ -215,6 +295,21 @@ async function onLogout() {
   overflow: hidden;
 }
 
+.shell.collapsed {
+  grid-template-columns: 86px minmax(0, 1fr);
+}
+
+.shell.collapsed .sidebar {
+  padding: 1.25rem 0.6rem;
+  gap: 1.2rem;
+}
+
+.shell.collapsed .brand-row {
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+}
+
 .sidebar {
   display: flex;
   flex-direction: column;
@@ -228,10 +323,59 @@ async function onLogout() {
   overflow: hidden;
 }
 
+.shell.collapsed .sidebar-toggle-icon {
+  transform: rotate(180deg);
+}
+
+.brand-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.brand-text {
+  min-width: 0;
+}
+
+.shell.collapsed .brand-text {
+  display: none;
+}
+
+.sidebar-toggle-btn {
+  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--muted);
+  border-radius: 12px;
+  width: 38px;
+  height: 38px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.sidebar-toggle-btn:hover {
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.sidebar-toggle-icon {
+  width: 1.1rem;
+  height: 1.1rem;
+  flex-shrink: 0;
+  transition: transform 0.2s ease;
+}
+
 .brand {
   display: flex;
   gap: 0.75rem;
   align-items: center;
+}
+
+.shell.collapsed .brand {
+  width: 100%;
+  justify-content: center;
 }
 
 .brand p {
@@ -248,6 +392,26 @@ async function onLogout() {
   background: var(--accent);
   color: var(--btn-on-accent);
   font-weight: 800;
+}
+
+.nav-text {
+  display: inline;
+}
+
+.shell.collapsed .nav-text {
+  display: none;
+}
+
+.footer-user-text {
+  white-space: nowrap;
+}
+
+.shell.collapsed .footer-user-text {
+  display: none;
+}
+
+.shell.collapsed .sidebar-footer {
+  align-items: center;
 }
 
 nav {
@@ -270,6 +434,7 @@ nav {
   align-items: center;
   gap: 0.65rem;
   min-width: 0;
+  white-space: nowrap;
 }
 
 .nav-group-toggle,
@@ -288,6 +453,7 @@ nav {
   font-weight: 600;
   text-align: left;
   transition: background 0.15s ease, color 0.15s ease;
+  white-space: nowrap;
 }
 
 .nav-group-toggle:hover,
@@ -336,6 +502,7 @@ nav {
   border-radius: 12px;
   color: var(--muted);
   transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+  white-space: nowrap;
 }
 
 /* Nested links: clearer hierarchy vs muted group toggles */
@@ -369,6 +536,43 @@ nav {
 .nav-subgroup-items .nav-link.router-link-active {
   border-left-color: var(--accent);
   color: var(--accent-strong);
+}
+
+.shell.collapsed .nav-label {
+  gap: 0;
+  justify-content: center;
+}
+
+.shell.collapsed .nav-link,
+.shell.collapsed .nav-group-toggle,
+.shell.collapsed .nav-subgroup-toggle {
+  padding-left: 0.55rem;
+  padding-right: 0.55rem;
+}
+
+.shell.collapsed .nav-link {
+  gap: 0;
+  justify-content: center;
+}
+
+.shell.collapsed .nav-link.nested {
+  padding-left: 0.55rem;
+}
+
+.shell.collapsed .nav-group-items,
+.shell.collapsed .nav-subgroup-items {
+  margin-left: 0.35rem;
+  padding-left: 0.25rem;
+}
+
+.shell.collapsed .nav-subgroup-items {
+  margin-left: 0.25rem;
+}
+
+.shell.collapsed .nav-group-items .nav-link,
+.shell.collapsed .nav-subgroup-items .nav-link {
+  margin-left: 0;
+  padding-left: 0.55rem;
 }
 
 .sidebar-footer {
@@ -413,12 +617,21 @@ nav {
     overflow: visible;
   }
 
+  .shell.collapsed {
+    grid-template-columns: 1fr;
+  }
+
   .sidebar {
     position: static;
     height: auto;
     overflow: visible;
     border-right: none;
     border-bottom: 1px solid var(--border);
+  }
+
+  .shell.collapsed .sidebar {
+    padding: 1.5rem 1rem;
+    gap: 1.5rem;
   }
 
   .content {
