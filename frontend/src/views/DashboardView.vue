@@ -381,7 +381,7 @@ onMounted(async () => {
         <div class="panel chart-side">
           <h2>Custos mensais</h2>
           <p v-if="totals" class="muted chart-subtitle">
-            Distribuição do total de entradas ({{ formatMoney(totals.totalIncome) }})
+            Total de entradas: {{ formatMoney(totals.totalIncome) }}
           </p>
           <div v-if="monthlyCostsItems.length" class="donut-layout">
             <div class="donut-canvas-wrap">
