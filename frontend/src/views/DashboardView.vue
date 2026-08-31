@@ -130,7 +130,7 @@ const monthlyChartData = computed(() => ({
   labels: monthly.value.map((x) => x.month),
   datasets: [
     {
-      label: 'Capital Investido',
+      label: 'Total Investido',
       data: monthly.value.map((x) => x.investedCapital),
       backgroundColor: cssVar('--success', '#4ade80'),
       stack: 'capital',
@@ -140,7 +140,7 @@ const monthlyChartData = computed(() => ({
       categoryPercentage: 0.6,
     },
     {
-      label: 'Capital Reservado',
+      label: 'Total em Montinhos',
       data: monthly.value.map((x) => x.reservedCapital),
       backgroundColor: cssVar('--chart-blue', '#3b82f6'),
       stack: 'capital',
@@ -150,7 +150,7 @@ const monthlyChartData = computed(() => ({
       categoryPercentage: 0.6,
     },
     {
-      label: 'Capital Livre',
+      label: 'Saldo livre',
       data: monthly.value.map((x) => x.freeCapital),
       backgroundColor: '#f59e0b',
       stack: 'capital',
@@ -160,7 +160,7 @@ const monthlyChartData = computed(() => ({
       categoryPercentage: 0.6,
     },
     {
-      label: 'Valor em Imóveis',
+      label: 'Imóveis',
       data: monthly.value.map((x) => x.propertyValue),
       backgroundColor: '#14b8a6',
       stack: 'capital',
@@ -302,7 +302,7 @@ onMounted(async () => {
           <div class="value">{{ formatMoney(patrimonio.patrimonio) }}</div>
           <div class="kpi-break">
             <div class="kpi-break-row">
-              <span>Valor Reservado</span>
+              <span>Montinhos</span>
               <strong>{{ formatMoney(patrimonio.somatorioReservas) }}</strong>
             </div>
             <div class="kpi-break-row">
