@@ -211,6 +211,53 @@ public record UpsertIncomeTypeRequest(string Name, string? Description, bool IsA
 public record PropertyExpenseTypeDto(Guid Id, string Name, string? Description, bool IsActive);
 public record UpsertPropertyExpenseTypeRequest(string Name, string? Description, bool IsActive);
 
+public record VehicleDto(
+    Guid Id,
+    string Name,
+    string Model,
+    int Year,
+    string? PhotoUrl,
+    decimal PaidValue,
+    decimal FipeValue,
+    decimal TotalExpenses,
+    decimal FipeVariance,
+    IReadOnlyList<VehicleExpenseDto> Expenses);
+
+public record VehicleExpenseDto(
+    Guid Id,
+    decimal Amount,
+    Guid ExpenseTypeId,
+    string ExpenseTypeName,
+    string Observation,
+    DateTime OccurredAt,
+    Guid? EntryId);
+
+public record CreateVehicleRequest(
+    string Name,
+    string Model,
+    int Year,
+    decimal PaidValue,
+    decimal FipeValue);
+
+public record UpdateVehicleRequest(
+    string Name,
+    string Model,
+    int Year,
+    decimal PaidValue,
+    decimal FipeValue);
+
+public record CreateVehicleExpenseRequest(
+    decimal Amount,
+    Guid ExpenseTypeId,
+    string Observation,
+    DateTime? OccurredAt,
+    bool DebitCash,
+    EntryDestination? CashDestination,
+    Guid? ReserveId);
+
+public record VehicleExpenseTypeDto(Guid Id, string Name, string? Description, bool IsActive);
+public record UpsertVehicleExpenseTypeRequest(string Name, string? Description, bool IsActive);
+
 public record IncomeSourceDto(
     Guid Id,
     string Name,
@@ -266,6 +313,7 @@ public record DashboardTotalsDto(
     decimal TotalPropertyRemainingBalance,
     decimal TotalFinancialCapital,
     decimal TotalPropertyAppraisedValue,
+    decimal TotalVehicleFipeValue,
     decimal TotalMonthlyCosts,
     decimal TotalInvestedFromFree,
     decimal TotalInvestedFromReserves,
@@ -273,7 +321,13 @@ public record DashboardTotalsDto(
     decimal TotalInvestmentGoals,
     decimal TotalOperationalCosts);
 
-public record MonthlyCapitalDto(string Month, decimal FreeCapital, decimal InvestedCapital, decimal ReservedCapital, decimal PropertyValue);
+public record MonthlyCapitalDto(
+    string Month,
+    decimal FreeCapital,
+    decimal InvestedCapital,
+    decimal ReservedCapital,
+    decimal PropertyValue,
+    decimal VehicleValue);
 public record ReserveDistributionDto(Guid ReserveId, string Name, decimal Value, string? Color);
 public record InvestmentTypeDistributionDto(Guid InvestmentTypeId, string Name, decimal Value);
 public record UpcomingInvestmentDto(Guid Id, string Name, DateTime EndDate, decimal CurrentAmount);

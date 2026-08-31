@@ -18,6 +18,7 @@ public class AppDbContextAdapter : IAppDbContext
     public IQueryable<InvestmentType> InvestmentTypes => _db.InvestmentTypes;
     public IQueryable<IncomeType> IncomeTypes => _db.IncomeTypes;
     public IQueryable<PropertyExpenseType> PropertyExpenseTypes => _db.PropertyExpenseTypes;
+    public IQueryable<VehicleExpenseType> VehicleExpenseTypes => _db.VehicleExpenseTypes;
     public IQueryable<Reserve> Reserves => _db.Reserves;
     public IQueryable<Entry> Entries => _db.Entries;
     public IQueryable<Investment> Investments => _db.Investments;
@@ -26,6 +27,8 @@ public class AppDbContextAdapter : IAppDbContext
     public IQueryable<PropertyAmortization> PropertyAmortizations => _db.PropertyAmortizations;
     public IQueryable<PropertyExpense> PropertyExpenses => _db.PropertyExpenses;
     public IQueryable<PropertyRentPayment> PropertyRentPayments => _db.PropertyRentPayments;
+    public IQueryable<Vehicle> Vehicles => _db.Vehicles;
+    public IQueryable<VehicleExpense> VehicleExpenses => _db.VehicleExpenses;
     public IQueryable<FixedCost> FixedCosts => _db.FixedCosts;
     public IQueryable<CostPayment> CostPayments => _db.CostPayments;
     public IQueryable<IncomeSource> IncomeSources => _db.IncomeSources;

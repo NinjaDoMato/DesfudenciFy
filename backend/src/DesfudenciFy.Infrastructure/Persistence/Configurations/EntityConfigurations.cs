@@ -303,3 +303,51 @@ public class InstallmentConfiguration : IEntityTypeConfiguration<Installment>
             .OnDelete(DeleteBehavior.SetNull);
     }
 }
+
+public class VehicleExpenseTypeConfiguration : IEntityTypeConfiguration<VehicleExpenseType>
+{
+    public void Configure(EntityTypeBuilder<VehicleExpenseType> builder)
+    {
+        builder.ToTable("VehicleExpenseTypes");
+        builder.HasKey(x => x.Id);
+        builder.Property(x => x.Name).HasMaxLength(100).IsRequired();
+        builder.Property(x => x.Description).HasMaxLength(500);
+    }
+}
+
+public class VehicleConfiguration : IEntityTypeConfiguration<Vehicle>
+{
+    public void Configure(EntityTypeBuilder<Vehicle> builder)
+    {
+        builder.ToTable("Vehicles");
+        builder.HasKey(x => x.Id);
+        builder.Property(x => x.Name).HasMaxLength(200).IsRequired();
+        builder.Property(x => x.Model).HasMaxLength(200).IsRequired();
+        builder.Property(x => x.PhotoPath).HasMaxLength(1000);
+        builder.Property(x => x.PaidValue).HasPrecision(18, 2);
+        builder.Property(x => x.FipeValue).HasPrecision(18, 2);
+    }
+}
+
+public class VehicleExpenseConfiguration : IEntityTypeConfiguration<VehicleExpense>
+{
+    public void Configure(EntityTypeBuilder<VehicleExpense> builder)
+    {
+        builder.ToTable("VehicleExpenses");
+        builder.HasKey(x => x.Id);
+        builder.Property(x => x.Amount).HasPrecision(18, 2);
+        builder.Property(x => x.Observation).HasMaxLength(500).IsRequired();
+        builder.HasOne(x => x.Vehicle)
+            .WithMany(x => x.Expenses)
+            .HasForeignKey(x => x.VehicleId)
+            .OnDelete(DeleteBehavior.Cascade);
+        builder.HasOne(x => x.ExpenseType)
+            .WithMany(x => x.Expenses)
+            .HasForeignKey(x => x.ExpenseTypeId)
+            .OnDelete(DeleteBehavior.Restrict);
+        builder.HasOne(x => x.Entry)
+            .WithMany()
+            .HasForeignKey(x => x.EntryId)
+            .OnDelete(DeleteBehavior.SetNull);
+    }
+}

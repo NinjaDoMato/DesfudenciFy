@@ -3,12 +3,14 @@ defineProps<{
   name:
     | 'dashboard'
     | 'capital'
+    | 'patrimonio'
     | 'budget'
     | 'admin'
     | 'settings'
     | 'reserves'
     | 'investments'
     | 'properties'
+    | 'vehicles'
     | 'entries'
     | 'income'
     | 'fixed-costs'
@@ -32,6 +34,11 @@ defineProps<{
     <template v-else-if="name === 'capital'">
       <path d="M12 3v18" />
       <path d="M7 7h7a3 3 0 0 1 0 6H9a3 3 0 0 0 0 6h8" />
+    </template>
+    <template v-else-if="name === 'patrimonio'">
+      <path d="M4 19V8l8-5 8 5v11" />
+      <path d="M9 19v-6h6v6" />
+      <path d="M4 19h16" />
     </template>
     <template v-else-if="name === 'budget'">
       <rect x="3" y="5" width="18" height="14" rx="2" />
@@ -62,6 +69,13 @@ defineProps<{
     </template>
     <template v-else-if="name === 'properties'">
       <path d="M4 10.5 12 4l8 6.5V20a1 1 0 0 1-1 1h-5v-6h-4v6H5a1 1 0 0 1-1-1v-9.5Z" />
+    </template>
+    <template v-else-if="name === 'vehicles'">
+      <path d="M5 16h14v2a1 1 0 0 1-1 1h-1a1 1 0 0 1-1-1v-1H8v1a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1v-2Z" />
+      <path d="M5 16 6.5 10.5A2 2 0 0 1 8.4 9h7.2a2 2 0 0 1 1.9 1.5L19 16" />
+      <circle cx="7.5" cy="16" r="1.2" />
+      <circle cx="16.5" cy="16" r="1.2" />
+      <path d="M9 12h6" />
     </template>
     <template v-else-if="name === 'entries'">
       <path d="M8 6h11a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H8" />

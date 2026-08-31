@@ -58,7 +58,7 @@ public class DashboardTotalsTests
     }
 
     [Fact]
-    public async Task Accumulated_wealth_should_add_financial_capital_and_property_appraised_values()
+    public async Task Accumulated_wealth_should_add_financial_capital_property_and_vehicle_values()
     {
         await using var fx = new TestDbFixture();
         await fx.CreditFreeAsync(1000m);
@@ -82,13 +82,20 @@ public class DashboardTotalsTests
             0m,
             0,
             0m));
+        await fx.Vehicles.CreateAsync(new CreateVehicleRequest(
+            "Civic",
+            "Honda Civic",
+            2020,
+            95_000m,
+            80_000m));
 
         var dashboard = new DashboardService(fx.AppDb, fx.Balance);
         var totals = await dashboard.GetTotalsAsync();
 
         Assert.Equal(1_000m, totals.TotalFinancialCapital);
         Assert.Equal(450_000m, totals.TotalPropertyAppraisedValue);
-        Assert.Equal(451_000m, totals.TotalAccumulated);
+        Assert.Equal(80_000m, totals.TotalVehicleFipeValue);
+        Assert.Equal(531_000m, totals.TotalAccumulated);
     }
 
     [Fact]

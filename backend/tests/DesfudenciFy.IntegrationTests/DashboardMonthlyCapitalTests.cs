@@ -106,5 +106,41 @@ public class DashboardMonthlyCapitalTests
             Assert.Equal(expected, monthly[i].PropertyValue);
         }
     }
+
+    [Fact]
+    public async Task Vehicle_value_should_start_contributing_from_creation_month()
+    {
+        await using var fx = new TestDbFixture();
+
+        var now = DateTime.UtcNow.Date;
+        var start = now.AddMonths(-11);
+        start = new DateTime(start.Year, start.Month, 1, 0, 0, 0, DateTimeKind.Utc);
+
+        var createdInMonthIndex = 4;
+        var monthStart = start.AddMonths(createdInMonthIndex);
+        var createdDate = monthStart.AddDays(8);
+
+        var vehicle = await fx.Vehicles.CreateAsync(new CreateVehicleRequest(
+            Name: "Civic",
+            Model: "Honda Civic",
+            Year: 2020,
+            PaidValue: 90_000m,
+            FipeValue: 75_000m));
+
+        var createdEntity = await fx.Db.Vehicles.SingleAsync(v => v.Id == vehicle.Id);
+        createdEntity.DateCreated = createdDate;
+        await fx.Db.SaveChangesAsync();
+
+        var dashboard = new DashboardService(fx.AppDb, fx.Balance);
+        var monthly = await dashboard.GetMonthlyCapitalAsync();
+
+        Assert.Equal(12, monthly.Count);
+
+        for (var i = 0; i < monthly.Count; i++)
+        {
+            var expected = i < createdInMonthIndex ? 0m : 75_000m;
+            Assert.Equal(expected, monthly[i].VehicleValue);
+        }
+    }
 }
 

@@ -16,6 +16,11 @@ const breakdown = computed(() => [
     value: props.data.propertyAppraised,
     show: props.data.propertyAppraised !== 0,
   },
+  {
+    label: 'Automóveis',
+    value: props.data.vehicleFipe,
+    show: props.data.vehicleFipe !== 0,
+  },
 ])
 </script>
 

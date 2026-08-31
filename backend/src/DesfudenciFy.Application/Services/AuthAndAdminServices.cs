@@ -351,3 +351,52 @@ public class PropertyExpenseTypeService
         await _db.SaveChangesAsync(cancellationToken);
     }
 }
+
+public class VehicleExpenseTypeService
+{
+    private readonly IAppDbContext _db;
+
+    public VehicleExpenseTypeService(IAppDbContext db) => _db = db;
+
+    public async Task<IReadOnlyList<VehicleExpenseTypeDto>> ListAsync(CancellationToken cancellationToken = default) =>
+        await _db.VehicleExpenseTypes.OrderBy(x => x.Name)
+            .Select(x => new VehicleExpenseTypeDto(x.Id, x.Name, x.Description, x.IsActive))
+            .ToListAsync(cancellationToken);
+
+    public async Task<VehicleExpenseTypeDto> CreateAsync(UpsertVehicleExpenseTypeRequest request, CancellationToken cancellationToken = default)
+    {
+        var entity = new VehicleExpenseType
+        {
+            Name = request.Name.Trim(),
+            Description = request.Description,
+            IsActive = request.IsActive
+        };
+        _db.Add(entity);
+        await _db.SaveChangesAsync(cancellationToken);
+        return new VehicleExpenseTypeDto(entity.Id, entity.Name, entity.Description, entity.IsActive);
+    }
+
+    public async Task<VehicleExpenseTypeDto> UpdateAsync(Guid id, UpsertVehicleExpenseTypeRequest request, CancellationToken cancellationToken = default)
+    {
+        var entity = await _db.VehicleExpenseTypes.FirstOrDefaultAsync(x => x.Id == id, cancellationToken)
+                     ?? throw new NotFoundException("Tipo de custo não encontrado.");
+        entity.Name = request.Name.Trim();
+        entity.Description = request.Description;
+        entity.IsActive = request.IsActive;
+        await _db.SaveChangesAsync(cancellationToken);
+        return new VehicleExpenseTypeDto(entity.Id, entity.Name, entity.Description, entity.IsActive);
+    }
+
+    public async Task DeleteAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        var entity = await _db.VehicleExpenseTypes.FirstOrDefaultAsync(x => x.Id == id, cancellationToken)
+                     ?? throw new NotFoundException("Tipo de custo não encontrado.");
+        if (await _db.VehicleExpenses.AnyAsync(e => e.ExpenseTypeId == id, cancellationToken))
+        {
+            throw new AppException("Não é possível excluir um tipo de custo vinculado a gastos.");
+        }
+
+        _db.Remove(entity);
+        await _db.SaveChangesAsync(cancellationToken);
+    }
+}

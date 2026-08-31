@@ -25,6 +25,7 @@ if (typeof window !== 'undefined') {
 
 const openGroups = ref<Record<string, boolean>>({
   capital: true,
+  patrimonio: true,
   budget: true,
   admin: true,
   settings: true,
@@ -35,7 +36,12 @@ const isSettingsRoute = computed(() =>
   route.path.startsWith('/admin/bank-accounts') ||
   route.path.startsWith('/admin/investment-types') ||
   route.path.startsWith('/admin/income-types') ||
-  route.path.startsWith('/admin/cost-types'),
+  route.path.startsWith('/admin/cost-types') ||
+  route.path.startsWith('/admin/vehicle-cost-types'),
+)
+const isPatrimonioRoute = computed(() =>
+  route.path.startsWith('/properties') ||
+  route.path.startsWith('/vehicles'),
 )
 
 watch(
@@ -43,6 +49,7 @@ watch(
   () => {
     if (isAdminRoute.value) openGroups.value.admin = true
     if (isSettingsRoute.value) openGroups.value.settings = true
+    if (isPatrimonioRoute.value) openGroups.value.patrimonio = true
   },
   { immediate: true },
 )
@@ -134,13 +141,35 @@ watch(sidebarCollapsed, (val) => {
               <NavIcon name="investments" />
               <span class="nav-text">Investimentos</span>
             </RouterLink>
+            <RouterLink class="nav-link" to="/entries" :title="sidebarCollapsed ? 'Extrato' : undefined">
+              <NavIcon name="entries" />
+              <span class="nav-text">Extrato</span>
+            </RouterLink>
+          </div>
+        </div>
+
+        <div class="nav-group">
+          <button
+            class="nav-group-toggle"
+            type="button"
+            :aria-expanded="openGroups.patrimonio"
+            :title="sidebarCollapsed ? 'Patrimônio' : undefined"
+            @click="toggleGroup('patrimonio')"
+          >
+            <span class="nav-label">
+              <NavIcon name="patrimonio" />
+              <span class="nav-text">Patrimônio</span>
+            </span>
+            <span class="chevron" :class="{ open: openGroups.patrimonio }">▾</span>
+          </button>
+          <div v-show="openGroups.patrimonio" class="nav-group-items">
             <RouterLink class="nav-link" to="/properties" :title="sidebarCollapsed ? 'Imóveis' : undefined">
               <NavIcon name="properties" />
               <span class="nav-text">Imóveis</span>
             </RouterLink>
-            <RouterLink class="nav-link" to="/entries" :title="sidebarCollapsed ? 'Extrato' : undefined">
-              <NavIcon name="entries" />
-              <span class="nav-text">Extrato</span>
+            <RouterLink class="nav-link" to="/vehicles" :title="sidebarCollapsed ? 'Automóveis' : undefined">
+              <NavIcon name="vehicles" />
+              <span class="nav-text">Automóveis</span>
             </RouterLink>
           </div>
         </div>
@@ -229,10 +258,18 @@ watch(sidebarCollapsed, (val) => {
                 <RouterLink
                   class="nav-link nested"
                   to="/admin/cost-types"
-                  :title="sidebarCollapsed ? 'Tipos de Custo' : undefined"
+                  :title="sidebarCollapsed ? 'Tipos de Custo (Imóveis)' : undefined"
                 >
                   <NavIcon name="cost-types" />
-                  <span class="nav-text">Tipos de Custo</span>
+                  <span class="nav-text">Tipos de Custo (Imóveis)</span>
+                </RouterLink>
+                <RouterLink
+                  class="nav-link nested"
+                  to="/admin/vehicle-cost-types"
+                  :title="sidebarCollapsed ? 'Tipos de Custo (Automóveis)' : undefined"
+                >
+                  <NavIcon name="cost-types" />
+                  <span class="nav-text">Tipos de Custo (Automóveis)</span>
                 </RouterLink>
                 <RouterLink
                   class="nav-link nested"

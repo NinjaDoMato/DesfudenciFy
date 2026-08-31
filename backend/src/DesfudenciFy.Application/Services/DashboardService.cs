@@ -44,11 +44,13 @@ public class DashboardService
         var propertyAppraised = await _db.Properties
             .Where(p => p.Status == PropertyStatus.Active)
             .SumAsync(p => (decimal?)p.AppraisedValue, cancellationToken) ?? 0m;
+        var vehicleFipe = await _db.Vehicles
+            .SumAsync(v => (decimal?)v.FipeValue, cancellationToken) ?? 0m;
         var monthlyCosts = monthlyGoal + fixedCosts + activeInstallments;
         var operationalCosts = fixedCosts + activeInstallments;
 
         return new DashboardTotalsDto(
-            TotalAccumulated: financialCapital + propertyAppraised,
+            TotalAccumulated: financialCapital + propertyAppraised + vehicleFipe,
             TotalFreeBalance: freeAvailable,
             TotalInvested: invested,
             TotalIncome: income,
@@ -58,6 +60,7 @@ public class DashboardService
             TotalPropertyRemainingBalance: propertyRemaining,
             TotalFinancialCapital: financialCapital,
             TotalPropertyAppraisedValue: propertyAppraised,
+            TotalVehicleFipeValue: vehicleFipe,
             TotalMonthlyCosts: monthlyCosts,
             TotalInvestedFromFree: investedFromFree,
             TotalInvestedFromReserves: investedFromReserves,
@@ -95,12 +98,23 @@ public class DashboardService
             .OrderBy(p => p.CreatedUtcDate)
             .ToList();
 
+        var vehicles = await _db.Vehicles
+            .Select(v => new { v.FipeValue, v.DateCreated })
+            .ToListAsync(cancellationToken);
+
+        var vehiclesByCreatedDate = vehicles
+            .Select(v => new { v.FipeValue, CreatedUtcDate = v.DateCreated.ToUniversalTime().Date })
+            .OrderBy(v => v.CreatedUtcDate)
+            .ToList();
+
         var start = DateTime.UtcNow.Date.AddMonths(-11);
         start = new DateTime(start.Year, start.Month, 1, 0, 0, 0, DateTimeKind.Utc);
 
         var result = new List<MonthlyCapitalDto>();
         decimal accumulatedPropertyValue = 0m;
+        decimal accumulatedVehicleValue = 0m;
         var propertyIndex = 0;
+        var vehicleIndex = 0;
         for (var i = 0; i < 12; i++)
         {
             var monthStart = start.AddMonths(i);
@@ -115,6 +129,13 @@ public class DashboardService
             {
                 accumulatedPropertyValue += activePropertiesByCreatedDate[propertyIndex].AppraisedValue;
                 propertyIndex++;
+            }
+
+            while (vehicleIndex < vehiclesByCreatedDate.Count
+                   && vehiclesByCreatedDate[vehicleIndex].CreatedUtcDate < monthEndUtcDate)
+            {
+                accumulatedVehicleValue += vehiclesByCreatedDate[vehicleIndex].FipeValue;
+                vehicleIndex++;
             }
 
             var free = entries
@@ -139,7 +160,13 @@ public class DashboardService
             var reservedCapital = Math.Max(0m, reserve - investedFromReserves);
             var freeCapital = Math.Max(0m, free - investedFromFree);
 
-            result.Add(new MonthlyCapitalDto(monthStart.ToString("yyyy-MM"), freeCapital, invested, reservedCapital, accumulatedPropertyValue));
+            result.Add(new MonthlyCapitalDto(
+                monthStart.ToString("yyyy-MM"),
+                freeCapital,
+                invested,
+                reservedCapital,
+                accumulatedPropertyValue,
+                accumulatedVehicleValue));
         }
 
         return result;

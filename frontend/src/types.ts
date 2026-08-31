@@ -123,6 +123,34 @@ export interface PropertyExpenseType {
   isActive: boolean
 }
 
+export interface Vehicle {
+  id: string
+  name: string
+  model: string
+  year: number
+  photoUrl?: string | null
+  paidValue: number
+  fipeValue: number
+  totalExpenses: number
+  fipeVariance: number
+  expenses: {
+    id: string
+    amount: number
+    expenseTypeId: string
+    expenseTypeName: string
+    observation: string
+    occurredAt: string
+    entryId?: string | null
+  }[]
+}
+
+export interface VehicleExpenseType {
+  id: string
+  name: string
+  description?: string | null
+  isActive: boolean
+}
+
 export interface UserDto {
   id: string
   email: string
@@ -198,6 +226,7 @@ export interface DashboardTotals {
   totalPropertyRemainingBalance: number
   totalFinancialCapital: number
   totalPropertyAppraisedValue: number
+  totalVehicleFipeValue: number
   totalMonthlyCosts: number
   totalInvestedFromFree: number
   totalInvestedFromReserves: number

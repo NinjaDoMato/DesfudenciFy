@@ -1,19 +1,19 @@
 <script setup lang="ts">
 import { onMounted, reactive, ref } from 'vue'
 import api from '@/api/client'
-import type { PropertyExpenseType } from '@/types'
+import type { VehicleExpenseType } from '@/types'
 import DataTable from '@/components/DataTable.vue'
 import IconButton from '@/components/IconButton.vue'
 import type { DataTableColumn } from '@/composables/useDataTable'
 import { useToastStore } from '@/stores/toast'
 
 const toast = useToastStore()
-const items = ref<PropertyExpenseType[]>([])
+const items = ref<VehicleExpenseType[]>([])
 const showForm = ref(false)
 const editingId = ref<string | null>(null)
 const form = reactive({ name: '', description: '', isActive: true })
 
-const columns: DataTableColumn<PropertyExpenseType>[] = [
+const columns: DataTableColumn<VehicleExpenseType>[] = [
   { key: 'name', label: 'Nome', sortValue: (row) => row.name },
   { key: 'description', label: 'Descrição', sortValue: (row) => row.description || '' },
   { key: 'isActive', label: 'Ativo', sortValue: (row) => (row.isActive ? 1 : 0) },
@@ -25,7 +25,7 @@ function toastError(e: unknown, fallback: string) {
 }
 
 async function load() {
-  const { data } = await api.get<PropertyExpenseType[]>('/admin/property-expense-types')
+  const { data } = await api.get<VehicleExpenseType[]>('/admin/vehicle-expense-types')
   items.value = data
 }
 
@@ -35,7 +35,7 @@ function openCreate() {
   showForm.value = true
 }
 
-function openEdit(item: PropertyExpenseType) {
+function openEdit(item: VehicleExpenseType) {
   editingId.value = item.id
   Object.assign(form, item)
   showForm.value = true
@@ -43,8 +43,8 @@ function openEdit(item: PropertyExpenseType) {
 
 async function save() {
   try {
-    if (editingId.value) await api.put(`/admin/property-expense-types/${editingId.value}`, form)
-    else await api.post('/admin/property-expense-types', form)
+    if (editingId.value) await api.put(`/admin/vehicle-expense-types/${editingId.value}`, form)
+    else await api.post('/admin/vehicle-expense-types', form)
     showForm.value = false
     await load()
   } catch (e) {
@@ -55,7 +55,7 @@ async function save() {
 async function remove(id: string) {
   if (!confirm('Excluir tipo?')) return
   try {
-    await api.delete(`/admin/property-expense-types/${id}`)
+    await api.delete(`/admin/vehicle-expense-types/${id}`)
     await load()
   } catch (e) {
     toastError(e, 'Erro')
@@ -70,7 +70,10 @@ onMounted(async () => {
 <template>
   <div class="page">
     <div class="page-header">
-      <div><h1>Tipos de custo (Imóveis)</h1><p class="muted">Leilão, material, serviços e outros tipos cadastráveis para gastos do imóvel.</p></div>
+      <div>
+        <h1>Tipos de custo (Automóveis)</h1>
+        <p class="muted">Documentação, impostos, revisão, reparos e outros tipos cadastráveis para gastos do veículo.</p>
+      </div>
       <button class="btn" type="button" @click="openCreate">Novo tipo</button>
     </div>
     <div class="panel">

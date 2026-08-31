@@ -127,5 +127,25 @@ public static class InfrastructureServiceCollectionExtensions
                 await db.SaveChangesAsync();
             }
         }
+
+        var vehicleExpenseTypeDefaults = new[] { "Documentação", "Impostos", "Revisão", "Reparos" };
+        if (!await db.VehicleExpenseTypes.AnyAsync())
+        {
+            db.VehicleExpenseTypes.AddRange(vehicleExpenseTypeDefaults.Select(name => new VehicleExpenseType { Name = name }));
+            await db.SaveChangesAsync();
+        }
+        else
+        {
+            var existingVehicleNames = await db.VehicleExpenseTypes.Select(t => t.Name).ToListAsync();
+            foreach (var name in vehicleExpenseTypeDefaults.Where(n => !existingVehicleNames.Contains(n)))
+            {
+                db.VehicleExpenseTypes.Add(new VehicleExpenseType { Name = name });
+            }
+
+            if (db.ChangeTracker.HasChanges())
+            {
+                await db.SaveChangesAsync();
+            }
+        }
     }
 }

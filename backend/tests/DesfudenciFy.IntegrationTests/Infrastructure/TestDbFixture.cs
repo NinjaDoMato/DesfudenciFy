@@ -16,6 +16,7 @@ public sealed class TestDbFixture : IAsyncDisposable
     public ReserveService Reserves { get; }
     public InvestmentService Investments { get; }
     public PropertyService Properties { get; }
+    public VehicleService Vehicles { get; }
     public FixedCostService FixedCosts { get; }
     public PurchaseService Purchases { get; }
     public IncomeSourceService IncomeSources { get; }
@@ -35,6 +36,7 @@ public sealed class TestDbFixture : IAsyncDisposable
         Reserves = new ReserveService(AppDb, Balance);
         Investments = new InvestmentService(AppDb, Balance);
         Properties = new PropertyService(AppDb, new NoOpFileStorage(), Balance);
+        Vehicles = new VehicleService(AppDb, new NoOpFileStorage(), Balance);
         FixedCosts = new FixedCostService(AppDb, Balance);
         Purchases = new PurchaseService(AppDb, Balance);
         IncomeSources = new IncomeSourceService(AppDb);
@@ -55,6 +57,11 @@ public sealed class TestDbFixture : IAsyncDisposable
             new PropertyExpenseType { Name = "Material", IsActive = true },
             new PropertyExpenseType { Name = "Serviços", IsActive = true },
             new PropertyExpenseType { Name = "Documentação", IsActive = true });
+        Db.VehicleExpenseTypes.AddRange(
+            new VehicleExpenseType { Name = "Documentação", IsActive = true },
+            new VehicleExpenseType { Name = "Impostos", IsActive = true },
+            new VehicleExpenseType { Name = "Revisão", IsActive = true },
+            new VehicleExpenseType { Name = "Reparos", IsActive = true });
         Db.SaveChanges();
     }
 
@@ -119,6 +126,9 @@ public sealed class TestDbFixture : IAsyncDisposable
     {
         public Task<string> SavePropertyPhotoAsync(Guid propertyId, Stream content, string fileName, CancellationToken cancellationToken = default) =>
             Task.FromResult($"properties/{propertyId}/{fileName}");
+
+        public Task<string> SaveVehiclePhotoAsync(Guid vehicleId, Stream content, string fileName, CancellationToken cancellationToken = default) =>
+            Task.FromResult($"vehicles/{vehicleId}/{fileName}");
 
         public Task DeleteAsync(string relativePath, CancellationToken cancellationToken = default) =>
             Task.CompletedTask;

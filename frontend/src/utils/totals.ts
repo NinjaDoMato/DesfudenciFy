@@ -36,6 +36,7 @@ export interface PatrimonioTotals {
   patrimonio: number
   financialCapital: number
   propertyAppraised: number
+  vehicleFipe: number
   saldoLivre: number
   somatorioReservas: number
 }
@@ -69,23 +70,28 @@ export function sumReservedCurrent(
 
 /**
  * Dashboard "Patrimônio acumulado":
- * capital financeiro (saldo livre atual + reservas atuais) + soma dos valores avaliados dos imóveis.
+ * capital financeiro (saldo livre atual + reservas atuais)
+ * + soma dos valores avaliados dos imóveis
+ * + soma dos valores FIPE dos veículos.
  * Breakdown uses Extrato/Reservas "Saldo livre" (available). Somatório das reservas is the
  * remainder of financial capital so the parts still add to the total
- * (saldo livre + somatório das reservas + imóveis).
+ * (saldo livre + somatório das reservas + imóveis + automóveis).
  */
 export function computePatrimonioTotals(
   financialCapital: number,
   propertyAppraised: number,
   saldoLivre: number,
+  vehicleFipe = 0,
 ): PatrimonioTotals {
   const financial = roundMoney(financialCapital)
   const properties = roundMoney(propertyAppraised)
+  const vehicles = roundMoney(vehicleFipe)
   const free = roundMoney(saldoLivre)
   return {
     financialCapital: financial,
     propertyAppraised: properties,
-    patrimonio: roundMoney(financial + properties),
+    vehicleFipe: vehicles,
+    patrimonio: roundMoney(financial + properties + vehicles),
     saldoLivre: free,
     somatorioReservas: roundMoney(financial - free),
   }

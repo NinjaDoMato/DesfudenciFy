@@ -112,18 +112,20 @@ describe('computeInvestmentTotals', () => {
 })
 
 describe('computePatrimonioTotals', () => {
-  it('should add financial capital and property appraised values', () => {
-    const totals = computePatrimonioTotals(1400, 450_000, 1000)
+  it('should add financial capital, property appraised values and vehicle FIPE', () => {
+    const totals = computePatrimonioTotals(1400, 450_000, 1000, 80_000)
 
     expect(totals.financialCapital).toBe(1400)
     expect(totals.propertyAppraised).toBe(450_000)
-    expect(totals.patrimonio).toBe(451_400)
+    expect(totals.vehicleFipe).toBe(80_000)
+    expect(totals.patrimonio).toBe(531_400)
   })
 
-  it('should keep patrimônio equal to financial capital when there are no properties', () => {
+  it('should keep patrimônio equal to financial capital when there are no properties or vehicles', () => {
     expect(computePatrimonioTotals(1650.4, 0, 1650.4)).toEqual({
       financialCapital: 1650.4,
       propertyAppraised: 0,
+      vehicleFipe: 0,
       patrimonio: 1650.4,
       saldoLivre: 1650.4,
       somatorioReservas: 0,
@@ -131,11 +133,13 @@ describe('computePatrimonioTotals', () => {
   })
 
   it('should split financial capital into saldo livre and somatório das reservas', () => {
-    const totals = computePatrimonioTotals(1400, 450_000, 1000)
+    const totals = computePatrimonioTotals(1400, 450_000, 1000, 25_000)
 
     expect(totals.saldoLivre).toBe(1000)
     expect(totals.somatorioReservas).toBe(400)
-    expect(totals.saldoLivre + totals.somatorioReservas + totals.propertyAppraised).toBe(totals.patrimonio)
+    expect(
+      totals.saldoLivre + totals.somatorioReservas + totals.propertyAppraised + totals.vehicleFipe,
+    ).toBe(totals.patrimonio)
   })
 })
 

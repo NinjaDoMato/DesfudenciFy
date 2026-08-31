@@ -167,3 +167,31 @@ public class PropertyExpenseTypesController : ControllerBase
         return NoContent();
     }
 }
+
+[ApiController]
+[Authorize(Roles = "Admin")]
+[Route("api/v1/admin/vehicle-expense-types")]
+public class VehicleExpenseTypesController : ControllerBase
+{
+    private readonly VehicleExpenseTypeService _service;
+
+    public VehicleExpenseTypesController(VehicleExpenseTypeService service) => _service = service;
+
+    [HttpGet]
+    public Task<IReadOnlyList<VehicleExpenseTypeDto>> List(CancellationToken cancellationToken) => _service.ListAsync(cancellationToken);
+
+    [HttpPost]
+    public Task<VehicleExpenseTypeDto> Create([FromBody] UpsertVehicleExpenseTypeRequest request, CancellationToken cancellationToken) =>
+        _service.CreateAsync(request, cancellationToken);
+
+    [HttpPut("{id:guid}")]
+    public Task<VehicleExpenseTypeDto> Update(Guid id, [FromBody] UpsertVehicleExpenseTypeRequest request, CancellationToken cancellationToken) =>
+        _service.UpdateAsync(id, request, cancellationToken);
+
+    [HttpDelete("{id:guid}")]
+    public async Task<IActionResult> Delete(Guid id, CancellationToken cancellationToken)
+    {
+        await _service.DeleteAsync(id, cancellationToken);
+        return NoContent();
+    }
+}

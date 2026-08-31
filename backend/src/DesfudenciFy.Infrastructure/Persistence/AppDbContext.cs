@@ -15,6 +15,7 @@ public class AppDbContext : DbContext
     public DbSet<InvestmentType> InvestmentTypes => Set<InvestmentType>();
     public DbSet<IncomeType> IncomeTypes => Set<IncomeType>();
     public DbSet<PropertyExpenseType> PropertyExpenseTypes => Set<PropertyExpenseType>();
+    public DbSet<VehicleExpenseType> VehicleExpenseTypes => Set<VehicleExpenseType>();
     public DbSet<Reserve> Reserves => Set<Reserve>();
     public DbSet<Entry> Entries => Set<Entry>();
     public DbSet<Investment> Investments => Set<Investment>();
@@ -23,6 +24,8 @@ public class AppDbContext : DbContext
     public DbSet<PropertyAmortization> PropertyAmortizations => Set<PropertyAmortization>();
     public DbSet<PropertyExpense> PropertyExpenses => Set<PropertyExpense>();
     public DbSet<PropertyRentPayment> PropertyRentPayments => Set<PropertyRentPayment>();
+    public DbSet<Vehicle> Vehicles => Set<Vehicle>();
+    public DbSet<VehicleExpense> VehicleExpenses => Set<VehicleExpense>();
     public DbSet<FixedCost> FixedCosts => Set<FixedCost>();
     public DbSet<CostPayment> CostPayments => Set<CostPayment>();
     public DbSet<IncomeSource> IncomeSources => Set<IncomeSource>();

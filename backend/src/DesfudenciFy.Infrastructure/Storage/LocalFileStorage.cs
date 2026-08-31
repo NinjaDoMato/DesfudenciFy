@@ -20,13 +20,32 @@ public class LocalFileStorage : IFileStorage
         string fileName,
         CancellationToken cancellationToken = default)
     {
+        return await SavePhotoAsync("properties", propertyId, content, fileName, cancellationToken);
+    }
+
+    public async Task<string> SaveVehiclePhotoAsync(
+        Guid vehicleId,
+        Stream content,
+        string fileName,
+        CancellationToken cancellationToken = default)
+    {
+        return await SavePhotoAsync("vehicles", vehicleId, content, fileName, cancellationToken);
+    }
+
+    private async Task<string> SavePhotoAsync(
+        string folder,
+        Guid entityId,
+        Stream content,
+        string fileName,
+        CancellationToken cancellationToken)
+    {
         var extension = Path.GetExtension(fileName);
         if (string.IsNullOrWhiteSpace(extension))
         {
             extension = ".jpg";
         }
 
-        var relativeDir = Path.Combine("properties", propertyId.ToString("N"));
+        var relativeDir = Path.Combine(folder, entityId.ToString("N"));
         var absoluteDir = Path.Combine(_rootPath, relativeDir);
         Directory.CreateDirectory(absoluteDir);
 

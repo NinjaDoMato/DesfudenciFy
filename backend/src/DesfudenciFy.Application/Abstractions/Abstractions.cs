@@ -9,6 +9,7 @@ public interface IAppDbContext
     IQueryable<InvestmentType> InvestmentTypes { get; }
     IQueryable<IncomeType> IncomeTypes { get; }
     IQueryable<PropertyExpenseType> PropertyExpenseTypes { get; }
+    IQueryable<VehicleExpenseType> VehicleExpenseTypes { get; }
     IQueryable<Reserve> Reserves { get; }
     IQueryable<Entry> Entries { get; }
     IQueryable<Investment> Investments { get; }
@@ -17,6 +18,8 @@ public interface IAppDbContext
     IQueryable<PropertyAmortization> PropertyAmortizations { get; }
     IQueryable<PropertyExpense> PropertyExpenses { get; }
     IQueryable<PropertyRentPayment> PropertyRentPayments { get; }
+    IQueryable<Vehicle> Vehicles { get; }
+    IQueryable<VehicleExpense> VehicleExpenses { get; }
     IQueryable<FixedCost> FixedCosts { get; }
     IQueryable<CostPayment> CostPayments { get; }
     IQueryable<IncomeSource> IncomeSources { get; }
@@ -43,6 +46,7 @@ public interface IJwtTokenService
 public interface IFileStorage
 {
     Task<string> SavePropertyPhotoAsync(Guid propertyId, Stream content, string fileName, CancellationToken cancellationToken = default);
+    Task<string> SaveVehiclePhotoAsync(Guid vehicleId, Stream content, string fileName, CancellationToken cancellationToken = default);
     Task DeleteAsync(string relativePath, CancellationToken cancellationToken = default);
     string GetAbsolutePath(string relativePath);
 }

@@ -69,7 +69,7 @@ interface MonthlyCostsItem {
 }
 
 const totals = ref<DashboardTotals | null>(null)
-const monthly = ref<{ month: string; freeCapital: number; investedCapital: number; reservedCapital: number; propertyValue: number }[]>([])
+const monthly = ref<{ month: string; freeCapital: number; investedCapital: number; reservedCapital: number; propertyValue: number; vehicleValue: number }[]>([])
 const distribution = ref<DistributionItem[]>([])
 const typeDistribution = ref<DistributionItem[]>([])
 const upcomingInvestments = ref<UpcomingInvestment[]>([])
@@ -81,6 +81,7 @@ const patrimonio = computed(() => {
     totals.value.totalFinancialCapital,
     totals.value.totalPropertyAppraisedValue,
     totals.value.totalFreeBalance,
+    totals.value.totalVehicleFipeValue,
   )
 })
 
@@ -162,6 +163,16 @@ const monthlyChartData = computed(() => ({
       label: 'Imóveis',
       data: monthly.value.map((x) => x.propertyValue),
       backgroundColor: '#14b8a6',
+      stack: 'capital',
+      borderSkipped: false,
+      borderRadius: { topLeft: 0, topRight: 0, bottomLeft: 0, bottomRight: 0 },
+      barPercentage: 0.45,
+      categoryPercentage: 0.6,
+    },
+    {
+      label: 'Automóveis',
+      data: monthly.value.map((x) => x.vehicleValue),
+      backgroundColor: '#6366f1',
       stack: 'capital',
       borderSkipped: false,
       borderRadius: { topLeft: 6, topRight: 6, bottomLeft: 0, bottomRight: 0 },
