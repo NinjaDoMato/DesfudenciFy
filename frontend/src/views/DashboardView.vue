@@ -12,9 +12,14 @@ import {
   Legend,
 } from 'chart.js'
 import api from '@/api/client'
-import { formatMoney, moneyPolarity, type DashboardTotals } from '@/types'
+import { formatMoney, type DashboardTotals } from '@/types'
 import { computeInvestidoTotals, computePatrimonioTotals } from '@/utils/totals'
 import DataTable from '@/components/DataTable.vue'
+import {
+  PatrimonioAcumuladoKpi,
+  SaldoMensalKpi,
+  TotalInvestidoKpi,
+} from '@/components/totals'
 import type { DataTableColumn } from '@/composables/useDataTable'
 import { useThemeStore } from '@/stores/theme'
 import { useToastStore } from '@/stores/toast'
@@ -310,67 +315,16 @@ onMounted(async () => {
         <p class="muted">Visão geral do capital livre, investido e compromissos.</p>
       </div>
     </div>
-    <div v-if="totals && patrimonio && investido" class="grid grid-totals-lead dashboard-totals">
-      <div class="kpi">
-        <div class="label">Patrimônio acumulado</div>
-        <div class="kpi-body">
-          <div class="value">{{ formatMoney(patrimonio.patrimonio) }}</div>
-          <div class="kpi-break">
-            <div class="kpi-break-row">
-              <span>Montinhos</span>
-              <strong>{{ formatMoney(patrimonio.somatorioReservas) }}</strong>
-            </div>
-            <div class="kpi-break-row">
-              <span>Saldo livre</span>
-              <strong>{{ formatMoney(patrimonio.saldoLivre) }}</strong>
-            </div>
-            <div v-if="patrimonio.propertyAppraised !== 0" class="kpi-break-row">
-              <span>Imóveis</span>
-              <strong>{{ formatMoney(patrimonio.propertyAppraised) }}</strong>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div class="kpi">
-        <div class="label">Investido</div>
-        <div class="kpi-body">
-          <div class="value">{{ formatMoney(investido.totalInvestido) }}</div>
-          <div class="kpi-break">
-            <div class="kpi-break-row">
-              <span>Saldo livre</span>
-              <strong>{{ formatMoney(investido.investedFromFree) }}</strong>
-            </div>
-            <div class="kpi-break-row">
-              <span>Montinhos</span>
-              <strong>{{ formatMoney(investido.investedFromReserves) }}</strong>
-            </div>
-            <div class="kpi-break-row">
-              <span>Lucro retido</span>
-              <strong :class="moneyPolarity(investido.lucroRetido)">{{ formatMoney(investido.lucroRetido) }}</strong>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div class="kpi">
-        <div class="label">Saldo mensal</div>
-        <div class="kpi-body">
-          <div class="value" :class="moneyPolarity(totals.monthlyBalance)">{{ formatMoney(totals.monthlyBalance) }}</div>
-          <div class="kpi-break">
-            <div class="kpi-break-row">
-              <span>Total de Entradas</span>
-              <strong :class="moneyPolarity(totals.totalIncome)">{{ formatMoney(totals.totalIncome) }}</strong>
-            </div>
-            <div class="kpi-break-row">
-              <span>Total de Custos</span>
-              <strong :class="moneyPolarity(-totals.totalOperationalCosts)">{{ formatMoney(totals.totalOperationalCosts) }}</strong>
-            </div>
-            <div class="kpi-break-row">
-              <span>Metas de Investimento</span>
-              <strong class="accent">{{ formatMoney(totals.totalInvestmentGoals) }}</strong>
-            </div>
-          </div>
-        </div>
-      </div>
+    <div v-if="totals && patrimonio && investido" class="grid grid-totals-lead">
+      <PatrimonioAcumuladoKpi :data="patrimonio" nowrap />
+      <TotalInvestidoKpi :data="investido" nowrap />
+      <SaldoMensalKpi
+        :monthly-balance="totals.monthlyBalance"
+        :total-income="totals.totalIncome"
+        :total-operational-costs="totals.totalOperationalCosts"
+        :total-investment-goals="totals.totalInvestmentGoals"
+        nowrap
+      />
     </div>
     <div class="charts-stack">
       <div class="panel chart-main">
@@ -499,10 +453,6 @@ onMounted(async () => {
 </template>
 
 <style scoped>
-.dashboard-totals .kpi-body {
-  flex-wrap: nowrap;
-}
-
 .charts-stack {
   display: grid;
   gap: 1rem;
@@ -620,7 +570,4 @@ onMounted(async () => {
   }
 }
 
-.accent {
-  color: var(--accent);
-}
 </style>

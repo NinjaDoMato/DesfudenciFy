@@ -2,10 +2,11 @@
 import { computed, onMounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import api from '@/api/client'
-import { formatMoney, moneyPolarity, type DashboardTotals, type Reserve } from '@/types'
+import { formatMoney, type DashboardTotals, type Reserve } from '@/types'
 import { computeInvestidoTotals, computeReserveTotals } from '@/utils/totals'
 import MoneyInput from '@/components/MoneyInput.vue'
 import DataTable from '@/components/DataTable.vue'
+import { DisponivelInvestimentoKpi, TotalInvestidoKpi } from '@/components/totals'
 import IconButton from '@/components/IconButton.vue'
 import type { DataTableColumn } from '@/composables/useDataTable'
 import { useToastStore } from '@/stores/toast'
@@ -142,42 +143,12 @@ onMounted(async () => {
           </div>
         </div>
       </div>
-      <div class="kpi">
-        <div class="label">Disponível para investimento</div>
-        <div class="kpi-body">
-          <div class="value">{{ formatMoney(totals.disponivelParaInvestimento) }}</div>
-          <div class="kpi-break">
-            <div class="kpi-break-row">
-              <span>Montinhos</span>
-              <strong>{{ formatMoney(totals.totalDisponivelReservas) }}</strong>
-            </div>
-            <div class="kpi-break-row">
-              <span>Saldo livre</span>
-              <strong>{{ formatMoney(totals.saldoLivre) }}</strong>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div v-if="investido" class="kpi">
-        <div class="label">Total investido</div>
-        <div class="kpi-body">
-          <div class="value">{{ formatMoney(investido.totalInvestido) }}</div>
-          <div class="kpi-break">
-            <div class="kpi-break-row">
-              <span>Saldo livre</span>
-              <strong>{{ formatMoney(investido.investedFromFree) }}</strong>
-            </div>
-            <div class="kpi-break-row">
-              <span>Montinhos</span>
-              <strong>{{ formatMoney(investido.investedFromReserves) }}</strong>
-            </div>
-            <div class="kpi-break-row">
-              <span>Lucro retido</span>
-              <strong :class="moneyPolarity(investido.lucroRetido)">{{ formatMoney(investido.lucroRetido) }}</strong>
-            </div>
-          </div>
-        </div>
-      </div>
+      <DisponivelInvestimentoKpi
+        :disponivel-para-investimento="totals.disponivelParaInvestimento"
+        :total-disponivel-reservas="totals.totalDisponivelReservas"
+        :saldo-livre="totals.saldoLivre"
+      />
+      <TotalInvestidoKpi v-if="investido" :data="investido" />
     </div>
     <div class="panel">
       <div class="filters filters-inline">

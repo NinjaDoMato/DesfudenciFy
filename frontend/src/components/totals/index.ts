@@ -1,0 +1,6 @@
+export { default as KpiCard } from './KpiCard.vue'
+export type { KpiBreakdownRow } from './KpiCard.vue'
+export { default as PatrimonioAcumuladoKpi } from './PatrimonioAcumuladoKpi.vue'
+export { default as TotalInvestidoKpi } from './TotalInvestidoKpi.vue'
+export { default as SaldoMensalKpi } from './SaldoMensalKpi.vue'
+export { default as DisponivelInvestimentoKpi } from './DisponivelInvestimentoKpi.vue'
