@@ -127,7 +127,7 @@ onMounted(async () => {
       </div>
     </div>
     <div class="panel">
-      <DataTable :rows="items" :columns="columns" row-key="id" initial-sort-key="occurredAt">
+      <DataTable :rows="items" :columns="columns" row-key="id" initial-sort-key="occurredAt" initial-sort-dir="desc">
         <template #cell-occurredAt="{ row }">{{ new Date(row.occurredAt).toLocaleString('pt-BR') }}</template>
         <template #cell-destination="{ row }">
           {{ row.destination === 'FreeBalance' ? 'Saldo livre' : row.reserveName }}

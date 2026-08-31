@@ -9,12 +9,13 @@ const props = withDefaults(
     rowKey: string
     pageSize?: number
     initialSortKey?: string
+    initialSortDir?: 'asc' | 'desc'
     emptyText?: string
     paginated?: boolean
     clickableRows?: boolean
   }>(),
   {
-    pageSize: 10,
+    pageSize: 20,
     emptyText: 'Nenhum registro encontrado.',
     paginated: true,
     clickableRows: false,
@@ -29,6 +30,7 @@ const rowsRef = toRef(props, 'rows')
 const table = useDataTable(rowsRef, props.columns, {
   pageSize: props.paginated ? props.pageSize : Number.MAX_SAFE_INTEGER,
   initialSortKey: props.initialSortKey,
+  initialSortDir: props.initialSortDir,
 })
 
 watch(

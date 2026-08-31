@@ -149,7 +149,7 @@ onMounted(async () => {
           <input v-model="nameFilter" type="search" placeholder="Filtrar por nome" />
         </div>
       </div>
-      <DataTable :rows="filteredItems" :columns="columns" row-key="id" initial-sort-key="name">
+      <DataTable :rows="filteredItems" :columns="columns" row-key="id" initial-sort-key="name" :per-page="20">
         <template #cell-name="{ row }">
           <span class="color-dot" :style="{ background: row.displayColor || '#38bdf8' }" />
           {{ row.name }}

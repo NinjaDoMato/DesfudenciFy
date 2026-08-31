@@ -207,7 +207,8 @@ watch(purchaseId, () => {
             :rows="installments"
             :columns="installmentColumns"
             row-key="id"
-            initial-sort-key="installmentNumber"
+            initial-sort-key="dueDate"
+            initial-sort-dir="desc"
             empty-text="Nenhuma parcela encontrada."
           >
             <template #cell-amount="{ row }">{{ formatMoney(row.amount) }}</template>

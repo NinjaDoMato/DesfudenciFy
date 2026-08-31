@@ -232,6 +232,7 @@ watch(
               row-key="id"
               :page-size="5"
               initial-sort-key="occurredAt"
+              initial-sort-dir="desc"
               empty-text="Nenhum lançamento nesta reserva."
             >
               <template #cell-occurredAt="{ row }">{{ new Date(row.occurredAt).toLocaleString('pt-BR') }}</template>

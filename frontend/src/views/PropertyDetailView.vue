@@ -788,6 +788,7 @@ watch(
                   row-key="id"
                   :page-size="5"
                   initial-sort-key="paidAt"
+                  initial-sort-dir="desc"
                   empty-text="Nenhuma amortização registrada."
                 >
                   <template #cell-paidAt="{ row }">{{ new Date(row.paidAt).toLocaleDateString('pt-BR') }}</template>
@@ -817,6 +818,7 @@ watch(
                   row-key="id"
                   :page-size="5"
                   initial-sort-key="paidAt"
+                  initial-sort-dir="desc"
                   empty-text="Nenhum aluguel registrado."
                 >
                   <template #cell-paidAt="{ row }">{{ new Date(row.paidAt).toLocaleDateString('pt-BR') }}</template>
@@ -874,6 +876,7 @@ watch(
                   row-key="id"
                   :page-size="5"
                   initial-sort-key="occurredAt"
+                  initial-sort-dir="desc"
                   empty-text="Nenhum gasto registrado."
                 >
                   <template #cell-occurredAt="{ row }">{{ new Date(row.occurredAt).toLocaleDateString('pt-BR') }}</template>

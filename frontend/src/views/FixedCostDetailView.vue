@@ -216,6 +216,7 @@ watch(costId, () => {
               row-key="id"
               :paginated="false"
               initial-sort-key="datePaid"
+              initial-sort-dir="desc"
               empty-text="Nenhum pagamento registrado."
             >
               <template #cell-datePaid="{ row }">
