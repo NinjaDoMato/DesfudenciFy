@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { Bar, Doughnut } from 'vue-chartjs'
+import { Bar, Doughnut, Pie } from 'vue-chartjs'
 import {
   Chart as ChartJS,
   BarElement,
@@ -57,7 +57,7 @@ type UpcomingBillRow = UpcomingBill & { rowKey: string }
 
 const DONUT_COLORS = ['#38bdf8', '#4ade80', '#3b82f6', '#a855f7', '#fb7185', '#f59e0b', '#14b8a6']
 
-interface CommitmentItem {
+interface MonthlyCostsItem {
   name: string
   value: number
   color: string
@@ -89,19 +89,13 @@ const investido = computed(() => {
   )
 })
 
-const commitmentItems = computed<CommitmentItem[]>(() => {
+const monthlyCostsItems = computed<MonthlyCostsItem[]>(() => {
   if (!totals.value) return []
   const t = totals.value
-  const metas = t.totalInvestmentGoals
-  const contasFixas = t.totalFixedCosts
-  const parcelamentos = t.totalOperationalCosts - t.totalFixedCosts
-  const committed = metas + contasFixas + parcelamentos
-  const disponivel = Math.max(0, t.totalFreeBalance - committed)
   return [
-    { name: 'Metas de montinhos', value: metas, color: '#3b82f6' },
-    { name: 'Contas fixas', value: contasFixas, color: '#f97316' },
-    { name: 'Parcelamentos', value: Math.max(0, parcelamentos), color: '#fb7185' },
-    { name: 'Disponível', value: disponivel, color: '#4ade80' },
+    { name: 'Custos mensais', value: t.totalOperationalCosts, color: '#f97316' },
+    { name: 'Metas de investimento', value: t.totalInvestmentGoals, color: '#3b82f6' },
+    { name: 'Saldo mensal', value: Math.max(0, t.monthlyBalance), color: '#4ade80' },
   ].filter((item) => item.value > 0)
 })
 
@@ -230,6 +224,27 @@ function doughnutData(items: DistributionItem[]) {
     }],
   }
 }
+
+const pieOptions = computed(() => ({
+  responsive: true,
+  maintainAspectRatio: false,
+  plugins: {
+    legend: { display: false },
+    tooltip: {
+      callbacks: {
+        label(context: { label?: string; parsed: number; dataset: { data: number[] } }) {
+          const total = context.dataset.data.reduce((a, b) => a + b, 0)
+          const pct = total > 0 ? ((context.parsed / total) * 100).toFixed(1) : '0.0'
+          return ` ${context.label ?? ''}: ${formatMoney(context.parsed)} (${pct}%)`
+        },
+        footer() {
+          if (!totals.value) return ''
+          return `Total de entradas: ${formatMoney(totals.value.totalIncome)}`
+        },
+      },
+    },
+  },
+}))
 
 const doughnutOptions = computed(() => ({
   responsive: true,
@@ -410,20 +425,30 @@ onMounted(async () => {
           <p v-else class="muted">Nenhum investimento ativo.</p>
         </div>
         <div class="panel chart-side">
-          <h2>Comprometimento do saldo livre</h2>
-          <div v-if="commitmentItems.length" class="donut-layout">
+          <h2>Custos mensais</h2>
+          <p v-if="totals" class="muted chart-subtitle">
+            Distribuição do total de entradas ({{ formatMoney(totals.totalIncome) }})
+          </p>
+          <div v-if="monthlyCostsItems.length" class="donut-layout">
             <div class="donut-canvas-wrap">
-              <Doughnut :data="doughnutData(commitmentItems)" :options="doughnutOptions" />
+              <Pie :data="doughnutData(monthlyCostsItems)" :options="pieOptions" />
             </div>
             <ul class="donut-legend">
               <li
-                v-for="item in commitmentItems"
+                v-for="item in monthlyCostsItems"
                 :key="item.name"
                 class="donut-legend-item"
               >
                 <span class="donut-legend-swatch" :style="{ background: item.color }" />
                 <span class="donut-legend-label" :title="item.name">{{ item.name }}</span>
                 <span class="donut-legend-value">{{ formatMoney(item.value) }}</span>
+              </li>
+              <li
+                v-if="totals && totals.monthlyBalance < 0"
+                class="donut-legend-item deficit"
+              >
+                <span class="donut-legend-label">Saldo mensal</span>
+                <span class="donut-legend-value negative">{{ formatMoney(totals.monthlyBalance) }}</span>
               </li>
             </ul>
           </div>
@@ -500,6 +525,11 @@ onMounted(async () => {
   flex-direction: column;
 }
 
+.chart-subtitle {
+  margin: -0.35rem 0 0.75rem;
+  font-size: 0.85rem;
+}
+
 .chart-frame {
   position: relative;
   width: 100%;
@@ -561,6 +591,16 @@ onMounted(async () => {
   font-weight: 600;
   white-space: nowrap;
   font-size: 0.78rem;
+}
+
+.donut-legend-value.negative {
+  color: var(--danger);
+}
+
+.donut-legend-item.deficit {
+  margin-top: 0.25rem;
+  padding-top: 0.35rem;
+  border-top: 1px solid var(--border);
 }
 
 @media (max-width: 480px) {
