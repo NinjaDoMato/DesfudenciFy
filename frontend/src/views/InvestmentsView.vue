@@ -4,14 +4,15 @@ import { useRoute, useRouter } from 'vue-router'
 import api from '@/api/client'
 import {
   formatMoney,
-  moneyPolarity,
   type BankAccount,
+  type DashboardTotals,
   type Investment,
   type InvestmentType,
   type Reserve,
 } from '@/types'
-import { computeInvestmentTotals } from '@/utils/totals'
+import { computeInvestmentTotals, computeInvestidoTotals, computeReserveTotals } from '@/utils/totals'
 import MoneyInput from '@/components/MoneyInput.vue'
+import { DisponivelInvestimentoKpi, TotalInvestidoKpi } from '@/components/totals'
 import DataTable from '@/components/DataTable.vue'
 import IconButton from '@/components/IconButton.vue'
 import LiquidationModal from '@/components/LiquidationModal.vue'
@@ -34,6 +35,7 @@ const items = ref<Investment[]>([])
 const reserves = ref<Reserve[]>([])
 const bankAccounts = ref<BankAccount[]>([])
 const types = ref<InvestmentType[]>([])
+const dashboardTotals = ref<DashboardTotals | null>(null)
 const freeBalanceAvailable = ref(0)
 const filters = reactive({
   name: '',
@@ -101,6 +103,24 @@ const columns: DataTableColumn<Investment>[] = [
 ]
 
 const screenTotals = computed(() => computeInvestmentTotals(items.value))
+const reserveTotals = computed(() =>
+  computeReserveTotals(
+    dashboardTotals.value?.totalFreeBalance ?? freeBalanceAvailable.value,
+    dashboardTotals.value?.totalInvested ?? 0,
+    reserves.value,
+  ),
+)
+
+const investido = computed(() => {
+  if (!dashboardTotals.value) return null
+  const d = dashboardTotals.value
+  return computeInvestidoTotals(
+    d.totalInvested,
+    d.totalInvestedFromFree,
+    d.totalInvestedFromReserves,
+    d.retainedProfit,
+  )
+})
 
 const filteredItems = computed(() => {
   const nameTerm = filters.name.trim().toLowerCase()
@@ -261,18 +281,20 @@ function validateAllocations(sourceReserves: { reserveId: string | null; amount:
 }
 
 async function load() {
-  const [inv, res, banks, t, free] = await Promise.all([
+  const [inv, res, banks, t, free, dashboard] = await Promise.all([
     api.get<Investment[]>('/investments'),
     api.get<Reserve[]>('/reserves'),
     api.get<BankAccount[]>('/lookups/bank-accounts'),
     api.get<InvestmentType[]>('/lookups/investment-types'),
     api.get<{ amount: number }>('/entries/free-balance'),
+    api.get<DashboardTotals>('/dashboard/totals'),
   ])
   items.value = inv.data
   reserves.value = res.data
   bankAccounts.value = banks.data
   types.value = t.data
   freeBalanceAvailable.value = free.data.amount
+  dashboardTotals.value = dashboard.data
 }
 
 const activeBankAccounts = computed(() => bankAccounts.value.filter((x) => x.isActive))
@@ -353,16 +375,12 @@ onMounted(async () => {
         <div class="label">Número de investimentos</div>
         <div class="value">{{ screenTotals.count }}</div>
       </div>
-      <div class="kpi">
-        <div class="label">Total investido</div>
-        <div class="value">{{ formatMoney(screenTotals.totalInvestido) }}</div>
-      </div>
-      <div class="kpi">
-        <div class="label">Lucro retido</div>
-        <div class="value" :class="moneyPolarity(screenTotals.lucroRetido)">
-          {{ formatMoney(screenTotals.lucroRetido) }}
-        </div>
-      </div>
+      <DisponivelInvestimentoKpi
+        :disponivel-para-investimento="reserveTotals.disponivelParaInvestimento"
+        :total-disponivel-reservas="reserveTotals.totalDisponivelReservas"
+        :saldo-livre="reserveTotals.saldoLivre"
+      />
+      <TotalInvestidoKpi v-if="investido" :data="investido" />
     </div>
     <div class="panel">
       <div class="filters">
