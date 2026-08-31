@@ -126,9 +126,9 @@ watch(sidebarCollapsed, (val) => {
             <span class="chevron" :class="{ open: openGroups.capital }">▾</span>
           </button>
           <div v-show="openGroups.capital" class="nav-group-items">
-            <RouterLink class="nav-link" to="/reserves" :title="sidebarCollapsed ? 'Reservas' : undefined">
+            <RouterLink class="nav-link" to="/reserves" :title="sidebarCollapsed ? 'Montinhos' : undefined">
               <NavIcon name="reserves" />
-              <span class="nav-text">Reservas</span>
+              <span class="nav-text">Montinhos</span>
             </RouterLink>
             <RouterLink class="nav-link" to="/investments" :title="sidebarCollapsed ? 'Investimentos' : undefined">
               <NavIcon name="investments" />

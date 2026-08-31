@@ -109,7 +109,7 @@ onMounted(async () => {
     <div class="page-header">
       <div>
         <h1>Lançamentos</h1>
-        <p class="muted">Lançamentos e transferências entre saldo livre e reservas.</p>
+        <p class="muted">Lançamentos e transferências entre saldo livre e montinhos.</p>
       </div>
       <div class="actions">
         <button class="btn" type="button" @click="showEntry = true">Novo lançamento</button>
@@ -122,7 +122,7 @@ onMounted(async () => {
         <div class="value">{{ formatMoney(freeBalance) }}</div>
       </div>
       <div class="kpi">
-        <div class="label">Saldo reservado</div>
+        <div class="label">Total nos Montinhos</div>
         <div class="value">{{ formatMoney(saldoReservado) }}</div>
       </div>
     </div>
@@ -150,11 +150,11 @@ onMounted(async () => {
           <label>Destino</label>
           <select v-model="entryForm.destination">
             <option value="FreeBalance">Saldo livre</option>
-            <option value="Reserve">Reserva</option>
+            <option value="Reserve">Montinho</option>
           </select>
         </div>
         <div v-if="entryForm.destination === 'Reserve'" class="field">
-          <label>Reserva</label>
+          <label>Montinho</label>
           <select v-model="entryForm.reserveId" required>
             <option disabled value="">Selecione</option>
             <option v-for="r in reserves" :key="r.id" :value="r.id">{{ r.name }}</option>
@@ -176,11 +176,11 @@ onMounted(async () => {
           <label>Origem</label>
           <select v-model="transferForm.sourceDestination">
             <option value="FreeBalance">Saldo livre</option>
-            <option value="Reserve">Reserva</option>
+            <option value="Reserve">Montinho</option>
           </select>
         </div>
         <div v-if="transferForm.sourceDestination === 'Reserve'" class="field">
-          <label>Reserva origem</label>
+          <label>Montinho de origem</label>
           <select v-model="transferForm.sourceReserveId" required>
             <option v-for="r in reserves" :key="r.id" :value="r.id">{{ r.name }}</option>
           </select>
@@ -189,11 +189,11 @@ onMounted(async () => {
           <label>Destino</label>
           <select v-model="transferForm.targetDestination">
             <option value="FreeBalance">Saldo livre</option>
-            <option value="Reserve">Reserva</option>
+            <option value="Reserve">Montinho</option>
           </select>
         </div>
         <div v-if="transferForm.targetDestination === 'Reserve'" class="field">
-          <label>Reserva destino</label>
+          <label>Montinho de destino</label>
           <select v-model="transferForm.targetReserveId" required>
             <option v-for="r in reserves" :key="r.id" :value="r.id">{{ r.name }}</option>
           </select>

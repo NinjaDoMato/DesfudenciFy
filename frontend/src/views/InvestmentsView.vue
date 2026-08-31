@@ -457,8 +457,8 @@ onMounted(async () => {
           </div>
           <p class="muted">
             {{ editingId
-              ? 'Use saldo livre e/ou reservas. O valor já aplicado neste investimento permanece disponível para realocação.'
-              : 'Pode investir com saldo livre, reservas, ou uma combinação dos dois.' }}
+              ? 'Use saldo livre e/ou montinhos. O valor já aplicado neste investimento permanece disponível para realocação.'
+              : 'Pode investir com saldo livre, montinhos, ou uma combinação dos dois.' }}
           </p>
           <div v-for="(row, index) in allocations" :key="index" class="allocation-row">
             <div class="field">

@@ -1,4 +1,5 @@
 export interface ReserveValueInput {
+  currentValue: number
   availableValue: number
   investedValue: number
 }
@@ -16,7 +17,9 @@ export interface InvestmentValueInput {
 
 export interface ReserveScreenTotals {
   saldoLivre: number
-  saldoReservado: number
+  totalMontinhos: number
+  totalDisponivelReservas: number
+  disponivelParaInvestimento: number
   totalAcumulado: number
   investedFromFree: number
   investedFromReserves: number
@@ -56,6 +59,12 @@ export function sumReservedAvailable(
   reserves: readonly Pick<ReserveValueInput, 'availableValue'>[],
 ): number {
   return sumBy(reserves.map((reserve) => reserve.availableValue))
+}
+
+export function sumReservedCurrent(
+  reserves: readonly Pick<ReserveValueInput, 'currentValue'>[],
+): number {
+  return sumBy(reserves.map((reserve) => reserve.currentValue))
 }
 
 /**
@@ -106,8 +115,10 @@ export function computeInvestidoTotals(
 /**
  * Reserves screen totals.
  * Saldo livre = available free balance (entries − invested with reserveId null).
- * Saldo reservado = sum of reserve.availableValue (current − invested per reserve).
- * Total acumulado = saldo livre + saldo reservado (unlocked capital).
+ * Total nos montinhos = sum of reserve.currentValue.
+ * Total disponível nas reservas = sum of reserve.availableValue.
+ * Disponível para investimento = saldo livre + total disponível nas reservas.
+ * Total acumulado = saldo livre + total disponível nas reservas (unlocked capital).
  * Total investido = invested from free + invested from reserves (ReserveInvestment.Amount).
  */
 export function computeReserveTotals(
@@ -116,14 +127,17 @@ export function computeReserveTotals(
   reserves: readonly ReserveValueInput[],
 ): ReserveScreenTotals {
   const saldoLivre = roundMoney(freeAvailable)
-  const saldoReservado = sumReservedAvailable(reserves)
+  const totalMontinhos = sumReservedCurrent(reserves)
+  const totalDisponivelReservas = sumReservedAvailable(reserves)
   const investedFromReserves = sumBy(reserves.map((reserve) => reserve.investedValue))
   const investedFromFree = roundMoney(totalInvested - investedFromReserves)
 
   return {
     saldoLivre,
-    saldoReservado,
-    totalAcumulado: roundMoney(saldoLivre + saldoReservado),
+    totalMontinhos,
+    totalDisponivelReservas,
+    disponivelParaInvestimento: roundMoney(saldoLivre + totalDisponivelReservas),
+    totalAcumulado: roundMoney(saldoLivre + totalDisponivelReservas),
     investedFromFree,
     investedFromReserves,
     totalInvestido: roundMoney(investedFromFree + investedFromReserves),

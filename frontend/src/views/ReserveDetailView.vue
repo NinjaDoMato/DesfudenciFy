@@ -148,7 +148,7 @@ async function transfer() {
   try {
     await api.post('/entries/transfer', {
       amount: Number(transferForm.amount),
-      observation: transferForm.observation || 'Transferência entre reservas',
+      observation: transferForm.observation || 'Transferência entre montinhos',
       sourceDestination: 'Reserve',
       sourceReserveId: reserveId.value,
       targetDestination: 'Reserve',
@@ -246,7 +246,7 @@ watch(
           </div>
 
           <div class="panel">
-            <h2>Transferência entre reservas</h2>
+            <h2>Transferência entre montinhos</h2>
             <form @submit.prevent="transfer">
               <div class="field">
                 <label>Valor</label>

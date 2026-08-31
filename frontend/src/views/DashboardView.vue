@@ -98,7 +98,7 @@ const commitmentItems = computed<CommitmentItem[]>(() => {
   const committed = metas + contasFixas + parcelamentos
   const disponivel = Math.max(0, t.totalFreeBalance - committed)
   return [
-    { name: 'Metas de reservas', value: metas, color: '#3b82f6' },
+    { name: 'Metas de montinhos', value: metas, color: '#3b82f6' },
     { name: 'Contas fixas', value: contasFixas, color: '#f97316' },
     { name: 'Parcelamentos', value: Math.max(0, parcelamentos), color: '#fb7185' },
     { name: 'Disponível', value: disponivel, color: '#4ade80' },
@@ -326,7 +326,7 @@ onMounted(async () => {
               <strong>{{ formatMoney(investido.investedFromFree) }}</strong>
             </div>
             <div class="kpi-break-row">
-              <span>Reservas</span>
+              <span>Montinhos</span>
               <strong>{{ formatMoney(investido.investedFromReserves) }}</strong>
             </div>
             <div class="kpi-break-row">

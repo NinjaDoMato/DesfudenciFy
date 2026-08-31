@@ -6,24 +6,28 @@ import {
   computeReserveTotals,
   investedAmountFromFree,
   sumReservedAvailable,
+  sumReservedCurrent,
 } from './totals'
 
 describe('computeReserveTotals', () => {
-  it('should add available free and reserved balances as total acumulado', () => {
+  it('should sum reserve current values as total nos montinhos', () => {
     const totals = computeReserveTotals(1200, 800, [
-      { availableValue: 300, investedValue: 200 },
-      { availableValue: 150, investedValue: 50 },
+      { currentValue: 500, availableValue: 300, investedValue: 200 },
+      { currentValue: 200, availableValue: 150, investedValue: 50 },
     ])
 
     expect(totals.saldoLivre).toBe(1200)
-    expect(totals.saldoReservado).toBe(450)
+    expect(totals.totalMontinhos).toBe(700)
+    expect(totals.totalDisponivelReservas).toBe(450)
+    expect(totals.disponivelParaInvestimento).toBe(1650)
+    expect(totals.investedFromReserves).toBe(250)
     expect(totals.totalAcumulado).toBe(1650)
   })
 
   it('should split total invested between free balance and reserves', () => {
     const totals = computeReserveTotals(500, 800, [
-      { availableValue: 100, investedValue: 200 },
-      { availableValue: 50, investedValue: 150 },
+      { currentValue: 300, availableValue: 100, investedValue: 200 },
+      { currentValue: 200, availableValue: 50, investedValue: 150 },
     ])
 
     expect(totals.investedFromReserves).toBe(350)
@@ -36,7 +40,9 @@ describe('computeReserveTotals', () => {
 
     expect(totals).toEqual({
       saldoLivre: 0,
-      saldoReservado: 0,
+      totalMontinhos: 0,
+      totalDisponivelReservas: 0,
+      disponivelParaInvestimento: 0,
       totalAcumulado: 0,
       investedFromFree: 0,
       investedFromReserves: 0,
@@ -156,5 +162,14 @@ describe('sumReservedAvailable', () => {
       { availableValue: 300 },
       { availableValue: 150.25 },
     ])).toBe(450.25)
+  })
+})
+
+describe('sumReservedCurrent', () => {
+  it('should sum currentValue of each reserve', () => {
+    expect(sumReservedCurrent([
+      { currentValue: 500 },
+      { currentValue: 200.5 },
+    ])).toBe(700.5)
   })
 })
