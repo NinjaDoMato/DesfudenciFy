@@ -205,26 +205,37 @@ public class EntryService
 
         if (request.Amount > 0)
         {
-            await _balance.EnsureAvailableAsync(EntryDestination.FreeBalance, null, request.Amount, cancellationToken);
-            _db.Add(new Entry
+            if (request.UseFreeBalance)
             {
-                Amount = -request.Amount,
-                Observation = freeObservation,
-                OccurredAt = occurredAt,
-                Destination = EntryDestination.FreeBalance
-            });
+                await _balance.EnsureAvailableAsync(EntryDestination.FreeBalance, null, request.Amount, cancellationToken);
+                _db.Add(new Entry
+                {
+                    Amount = -request.Amount,
+                    Observation = freeObservation,
+                    OccurredAt = occurredAt,
+                    Destination = EntryDestination.FreeBalance
+                });
+            }
         }
         else
         {
             var absAmount = Math.Abs(request.Amount);
-            await _balance.EnsureAvailableAsync(EntryDestination.Reserve, request.ReserveId, absAmount, cancellationToken);
-            _db.Add(new Entry
+            await _balance.EnsureAvailableAsync(
+                EntryDestination.Reserve,
+                request.ReserveId,
+                absAmount,
+                cancellationToken);
+
+            if (request.UseFreeBalance)
             {
-                Amount = absAmount,
-                Observation = freeObservation,
-                OccurredAt = occurredAt,
-                Destination = EntryDestination.FreeBalance
-            });
+                _db.Add(new Entry
+                {
+                    Amount = absAmount,
+                    Observation = freeObservation,
+                    OccurredAt = occurredAt,
+                    Destination = EntryDestination.FreeBalance
+                });
+            }
         }
 
         var entry = new Entry

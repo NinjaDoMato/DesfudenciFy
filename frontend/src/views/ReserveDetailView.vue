@@ -31,7 +31,11 @@ const form = reactive({
 const entryForm = reactive({
   amount: 0,
   observation: '',
+  useFreeBalance: false,
 })
+
+const entryAmountIsPositive = computed(() => entryForm.amount > 0)
+const entryAmountIsNegative = computed(() => entryForm.amount < 0)
 
 const transferForm = reactive({
   amount: 0,
@@ -113,9 +117,11 @@ async function addEntry() {
       observation: entryForm.observation,
       destination: 'Reserve',
       reserveId: reserveId.value,
+      useFreeBalance: entryForm.useFreeBalance,
     })
     entryForm.amount = 0
     entryForm.observation = ''
+    entryForm.useFreeBalance = false
     await load()
     toast.success('Lançamento adicionado.')
   } catch (e) {
@@ -163,6 +169,13 @@ onMounted(load)
 watch(reserveId, () => {
   void load()
 })
+
+watch(
+  () => entryForm.amount,
+  (amount) => {
+    entryForm.useFreeBalance = amount > 0
+  },
+)
 </script>
 
 <template>
@@ -203,6 +216,14 @@ watch(reserveId, () => {
             <form class="entry-add" @submit.prevent="addEntry">
               <div class="field"><label>Valor</label><MoneyInput v-model="entryForm.amount" allow-negative required /></div>
               <div class="field"><label>Observação</label><input v-model="entryForm.observation" maxlength="100" /></div>
+              <label v-if="entryAmountIsPositive" class="checkbox-field">
+                <input v-model="entryForm.useFreeBalance" type="checkbox" />
+                Debitar do Saldo Livre
+              </label>
+              <label v-else-if="entryAmountIsNegative" class="checkbox-field">
+                <input v-model="entryForm.useFreeBalance" type="checkbox" />
+                Mover para Saldo Livre
+              </label>
               <button class="btn" type="submit">Adicionar</button>
             </form>
             <DataTable
@@ -308,6 +329,16 @@ watch(reserveId, () => {
   gap: 0.75rem;
   align-items: end;
   margin-bottom: 1rem;
+}
+
+.checkbox-field {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  grid-column: 1 / -1;
+  margin-bottom: 0;
 }
 
 .entry-add .field {

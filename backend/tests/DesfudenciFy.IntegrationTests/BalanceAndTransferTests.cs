@@ -110,7 +110,8 @@ public class BalanceAndTransferTests
             "Aporte",
             null,
             EntryDestination.Reserve,
-            reserve.Id));
+            reserve.Id,
+            UseFreeBalance: true));
 
         Assert.Equal(300m, await fx.Balance.GetFreeBalanceAvailableAsync());
         Assert.Equal(200m, await fx.Balance.GetReserveAvailableAsync(reserve.Id));
@@ -128,7 +129,8 @@ public class BalanceAndTransferTests
             "",
             null,
             EntryDestination.Reserve,
-            reserve.Id)));
+            reserve.Id,
+            UseFreeBalance: true)));
 
         Assert.Equal("Saldo livre insuficiente.", exception.Message);
         Assert.Equal(100m, await fx.Balance.GetFreeBalanceAvailableAsync());
@@ -136,7 +138,7 @@ public class BalanceAndTransferTests
     }
 
     [Fact]
-    public async Task Negative_reserve_entry_should_credit_free_balance()
+    public async Task Negative_reserve_entry_should_only_reduce_reserve()
     {
         await using var fx = new TestDbFixture();
         var reserve = await fx.SeedReserveAsync();
@@ -149,6 +151,44 @@ public class BalanceAndTransferTests
             null,
             EntryDestination.Reserve,
             reserve.Id));
+
+        Assert.Equal(300m, await fx.Balance.GetFreeBalanceAvailableAsync());
+        Assert.Equal(120m, await fx.Balance.GetReserveAvailableAsync(reserve.Id));
+    }
+
+    [Fact]
+    public async Task Positive_reserve_entry_without_free_balance_should_only_increase_reserve()
+    {
+        await using var fx = new TestDbFixture();
+        var reserve = await fx.SeedReserveAsync();
+        await fx.CreditFreeAsync(500m);
+
+        await fx.Entries.CreateAsync(new CreateEntryRequest(
+            200m,
+            "Aporte direto",
+            null,
+            EntryDestination.Reserve,
+            reserve.Id));
+
+        Assert.Equal(500m, await fx.Balance.GetFreeBalanceAvailableAsync());
+        Assert.Equal(200m, await fx.Balance.GetReserveAvailableAsync(reserve.Id));
+    }
+
+    [Fact]
+    public async Task Negative_reserve_entry_with_free_balance_should_credit_free_balance()
+    {
+        await using var fx = new TestDbFixture();
+        var reserve = await fx.SeedReserveAsync();
+        await fx.CreditFreeAsync(500m);
+        await fx.CreditReserveAsync(reserve.Id, 200m);
+
+        await fx.Entries.CreateAsync(new CreateEntryRequest(
+            -80m,
+            "Resgate",
+            null,
+            EntryDestination.Reserve,
+            reserve.Id,
+            UseFreeBalance: true));
 
         Assert.Equal(380m, await fx.Balance.GetFreeBalanceAvailableAsync());
         Assert.Equal(120m, await fx.Balance.GetReserveAvailableAsync(reserve.Id));

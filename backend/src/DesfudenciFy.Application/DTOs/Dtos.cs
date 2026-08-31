@@ -44,7 +44,8 @@ public record CreateEntryRequest(
     string Observation,
     DateTime? OccurredAt,
     EntryDestination Destination,
-    Guid? ReserveId);
+    Guid? ReserveId,
+    bool UseFreeBalance = false);
 
 public record TransferRequest(
     EntryDestination SourceDestination,
