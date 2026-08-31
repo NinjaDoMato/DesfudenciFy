@@ -26,7 +26,7 @@ public class VehicleFlowTests
         Assert.Equal(95_000m, created.PaidValue);
         Assert.Equal(88_000m, created.FipeValue);
         Assert.Equal(0m, created.TotalExpenses);
-        Assert.Equal(7_000m, created.FipeVariance);
+        Assert.Equal(-7_000m, created.FipeVariance);
 
         var updated = await fx.Vehicles.UpdateAsync(created.Id, new UpdateVehicleRequest(
             "Civic Touring",
@@ -38,7 +38,7 @@ public class VehicleFlowTests
         Assert.Equal("Civic Touring", updated.Name);
         Assert.Equal("Honda Civic Touring", updated.Model);
         Assert.Equal(2021, updated.Year);
-        Assert.Equal(8_000m, updated.FipeVariance);
+        Assert.Equal(-8_000m, updated.FipeVariance);
     }
 
     [Fact]
@@ -54,7 +54,7 @@ public class VehicleFlowTests
             80_000m,
             78_000m));
 
-        Assert.Equal(2_000m, vehicle.FipeVariance);
+        Assert.Equal(-2_000m, vehicle.FipeVariance);
 
         var expenseType = await fx.Db.VehicleExpenseTypes.SingleAsync(t => t.Name == "Revisão");
         var expense = await fx.Vehicles.AddExpenseAsync(vehicle.Id, new CreateVehicleExpenseRequest(
@@ -73,7 +73,7 @@ public class VehicleFlowTests
 
         var updated = await fx.Vehicles.GetAsync(vehicle.Id);
         Assert.Equal(1_500m, updated.TotalExpenses);
-        Assert.Equal(3_500m, updated.FipeVariance);
+        Assert.Equal(-3_500m, updated.FipeVariance);
         Assert.Equal(3_500m, await fx.Balance.GetFreeBalanceAvailableAsync());
     }
 
@@ -104,7 +104,7 @@ public class VehicleFlowTests
 
         var updated = await fx.Vehicles.GetAsync(vehicle.Id);
         Assert.Equal(800m, updated.TotalExpenses);
-        Assert.Equal(2_800m, updated.FipeVariance);
+        Assert.Equal(-2_800m, updated.FipeVariance);
     }
 
     [Fact]
@@ -135,7 +135,7 @@ public class VehicleFlowTests
         Assert.Empty(await fx.Db.Entries.Where(e => e.Amount < 0).ToListAsync());
         var updated = await fx.Vehicles.GetAsync(vehicle.Id);
         Assert.Equal(0m, updated.TotalExpenses);
-        Assert.Equal(3_000m, updated.FipeVariance);
+        Assert.Equal(-3_000m, updated.FipeVariance);
         Assert.Equal(3_000m, await fx.Balance.GetFreeBalanceAvailableAsync());
     }
 

@@ -68,8 +68,8 @@ const expensesTone = computed<Tone>(() => {
 const varianceTone = computed<Tone>(() => {
   if (!vehicle.value) return ''
   const value = vehicle.value.fipeVariance
-  if (value > 0) return 'tone-danger'
-  if (value < 0) return 'tone-success'
+  if (value > 0) return 'tone-success'
+  if (value < 0) return 'tone-danger'
   return 'tone-warning'
 })
 
@@ -259,7 +259,7 @@ watch(vehicleId, () => {
                 <div class="kpi">
                   <div class="label">Variação FIPE</div>
                   <div class="value" :class="varianceTone">{{ formatMoney(vehicle.fipeVariance) }}</div>
-                  <p class="muted hint">Valor pago + custos − FIPE</p>
+                  <p class="muted hint">FIPE − (valor pago + custos)</p>
                 </div>
               </div>
             </section>

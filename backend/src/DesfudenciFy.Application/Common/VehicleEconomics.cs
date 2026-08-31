@@ -8,11 +8,11 @@ public static class VehicleEconomics
     }
 
     /// <summary>
-    /// Variação FIPE = valor pago + custos − FIPE.
-    /// Positivo: custo acima da tabela; negativo: abaixo.
+    /// Variação FIPE = FIPE − (valor pago + custos).
+    /// Positivo: valor de mercado acima do custo; negativo: abaixo.
     /// </summary>
     public static decimal CalculateFipeVariance(decimal paidValue, decimal totalExpenses, decimal fipeValue)
     {
-        return Math.Round(paidValue + totalExpenses - fipeValue, 2, MidpointRounding.AwayFromZero);
+        return Math.Round(fipeValue - (paidValue + totalExpenses), 2, MidpointRounding.AwayFromZero);
     }
 }

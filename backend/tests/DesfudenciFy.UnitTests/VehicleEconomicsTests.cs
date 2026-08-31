@@ -21,7 +21,7 @@ public class VehicleEconomicsTests
     }
 
     [Fact]
-    public void Should_calculate_fipe_variance_as_paid_plus_expenses_minus_fipe()
+    public void Should_calculate_fipe_variance_as_fipe_minus_paid_and_expenses()
     {
         var totalExpenses = VehicleEconomics.CalculateTotalExpenses([2_000m, 1_500m]);
         var variance = VehicleEconomics.CalculateFipeVariance(
@@ -29,18 +29,18 @@ public class VehicleEconomicsTests
             totalExpenses: totalExpenses,
             fipeValue: 75_000m);
 
-        Assert.Equal(8_500m, variance);
+        Assert.Equal(-8_500m, variance);
     }
 
     [Fact]
-    public void Should_allow_negative_fipe_variance_when_fipe_exceeds_paid_plus_costs()
+    public void Should_allow_positive_fipe_variance_when_fipe_exceeds_paid_plus_costs()
     {
         var variance = VehicleEconomics.CalculateFipeVariance(
             paidValue: 50_000m,
             totalExpenses: 2_000m,
             fipeValue: 60_000m);
 
-        Assert.Equal(-8_000m, variance);
+        Assert.Equal(8_000m, variance);
     }
 
     [Fact]
@@ -53,6 +53,6 @@ public class VehicleEconomicsTests
         Assert.Equal(0.01m, totalRoundedUp);
 
         var variance = VehicleEconomics.CalculateFipeVariance(100.005m, 0m, 50m);
-        Assert.Equal(50.01m, variance);
+        Assert.Equal(-50.01m, variance);
     }
 }

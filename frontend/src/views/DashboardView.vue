@@ -140,7 +140,7 @@ const monthlyChartData = computed(() => ({
       categoryPercentage: 0.6,
     },
     {
-      label: 'Total livre nos Montinhos',
+      label: 'Livre nos Montinhos',
       data: monthly.value.map((x) => x.reservedCapital),
       backgroundColor: cssVar('--chart-blue', '#3b82f6'),
       stack: 'capital',
