@@ -138,9 +138,9 @@ watch(sidebarCollapsed, (val) => {
               <NavIcon name="properties" />
               <span class="nav-text">Imóveis</span>
             </RouterLink>
-            <RouterLink class="nav-link" to="/entries" :title="sidebarCollapsed ? 'Lançamentos' : undefined">
+            <RouterLink class="nav-link" to="/entries" :title="sidebarCollapsed ? 'Extrato' : undefined">
               <NavIcon name="entries" />
-              <span class="nav-text">Lançamentos</span>
+              <span class="nav-text">Extrato</span>
             </RouterLink>
           </div>
         </div>

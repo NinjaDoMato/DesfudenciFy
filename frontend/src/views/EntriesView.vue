@@ -108,7 +108,7 @@ onMounted(async () => {
   <div class="page">
     <div class="page-header">
       <div>
-        <h1>Lançamentos</h1>
+        <h1>Extrato</h1>
         <p class="muted">Lançamentos e transferências entre saldo livre e montinhos.</p>
       </div>
       <div class="actions">
@@ -122,7 +122,7 @@ onMounted(async () => {
         <div class="value">{{ formatMoney(freeBalance) }}</div>
       </div>
       <div class="kpi">
-        <div class="label">Total nos Montinhos</div>
+        <div class="label">Total disponível nos Montinhos</div>
         <div class="value">{{ formatMoney(saldoReservado) }}</div>
       </div>
     </div>
