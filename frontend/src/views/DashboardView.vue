@@ -12,7 +12,7 @@ import {
   Legend,
 } from 'chart.js'
 import api from '@/api/client'
-import { formatMoney, type DashboardTotals } from '@/types'
+import { formatDate, formatMoney, parseDateForSort, type DashboardTotals } from '@/types'
 import { computeInvestidoTotals, computePatrimonioTotals } from '@/utils/totals'
 import DataTable from '@/components/DataTable.vue'
 import {
@@ -115,14 +115,14 @@ const upcomingBillRows = computed<UpcomingBillRow[]>(() =>
 
 const investmentColumns: DataTableColumn<UpcomingInvestment>[] = [
   { key: 'name', label: 'Nome', sortValue: (row) => row.name },
-  { key: 'endDate', label: 'Vencimento', sortValue: (row) => new Date(row.endDate) },
+  { key: 'endDate', label: 'Vencimento', sortValue: (row) => parseDateForSort(row.endDate) },
   { key: 'currentAmount', label: 'Valor', sortValue: (row) => row.currentAmount },
 ]
 
 const billColumns: DataTableColumn<UpcomingBillRow>[] = [
   { key: 'kind', label: 'Tipo', sortValue: (row) => row.kind },
   { key: 'name', label: 'Nome', sortValue: (row) => row.name },
-  { key: 'dueDate', label: 'Vencimento', sortValue: (row) => (row.dueDate ? new Date(row.dueDate) : null) },
+  { key: 'dueDate', label: 'Vencimento', sortValue: (row) => parseDateForSort(row.dueDate) },
   { key: 'amount', label: 'Valor', sortValue: (row) => row.amount },
 ]
 
@@ -434,7 +434,7 @@ onMounted(async () => {
           empty-text="Nenhum vencimento próximo."
           @row-click="openInvestment"
         >
-          <template #cell-endDate="{ row }">{{ new Date(row.endDate).toLocaleDateString('pt-BR') }}</template>
+          <template #cell-endDate="{ row }">{{ formatDate(row.endDate) }}</template>
           <template #cell-currentAmount="{ row }">{{ formatMoney(row.currentAmount) }}</template>
         </DataTable>
       </div>
@@ -454,7 +454,7 @@ onMounted(async () => {
             <span class="badge">{{ row.kind === 'FixedCost' ? 'Conta fixa' : 'Parcelamento' }}</span>
           </template>
           <template #cell-dueDate="{ row }">
-            {{ row.dueDate ? new Date(row.dueDate).toLocaleDateString('pt-BR') : '-' }}
+            {{ formatDate(row.dueDate) || '-' }}
           </template>
           <template #cell-amount="{ row }">{{ formatMoney(row.amount) }}</template>
         </DataTable>

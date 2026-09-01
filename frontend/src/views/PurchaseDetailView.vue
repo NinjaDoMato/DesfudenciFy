@@ -2,7 +2,15 @@
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import api from '@/api/client'
-import { formatMoney, type Purchase, type PurchaseInstallment, type Reserve } from '@/types'
+import {
+  compareDateStrings,
+  formatDate,
+  formatMoney,
+  parseDateForSort,
+  type Purchase,
+  type PurchaseInstallment,
+  type Reserve,
+} from '@/types'
 import DataTable from '@/components/DataTable.vue'
 import IconButton from '@/components/IconButton.vue'
 import type { DataTableColumn } from '@/composables/useDataTable'
@@ -29,9 +37,9 @@ const form = reactive({
 const installmentColumns: DataTableColumn<PurchaseInstallment>[] = [
   { key: 'installmentNumber', label: '#', sortValue: (row) => row.installmentNumber },
   { key: 'amount', label: 'Valor', sortValue: (row) => row.amount },
-  { key: 'dueDate', label: 'Vencimento', sortValue: (row) => new Date(row.dueDate) },
+  { key: 'dueDate', label: 'Vencimento', sortValue: (row) => parseDateForSort(row.dueDate) },
   { key: 'status', label: 'Status', sortValue: (row) => (row.paid ? 1 : 0) },
-  { key: 'paidDate', label: 'Pago em', sortValue: (row) => (row.paidDate ? new Date(row.paidDate) : null) },
+  { key: 'paidDate', label: 'Pago em', sortValue: (row) => parseDateForSort(row.paidDate) },
   { key: 'actions', label: '', sortable: false },
 ]
 
@@ -46,7 +54,7 @@ const sourceLabel = computed(() => {
 const nextDue = computed(() => {
   const pending = remaining.value
     .slice()
-    .sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime())
+    .sort((a, b) => compareDateStrings(a.dueDate, b.dueDate))
   return pending[0] ?? null
 })
 
@@ -182,7 +190,7 @@ watch(purchaseId, () => {
             <div class="kpi">
               <div class="label">Próximo vencimento</div>
               <div class="value value-sm">
-                {{ nextDue ? new Date(nextDue.dueDate).toLocaleDateString('pt-BR') : '-' }}
+                {{ formatDate(nextDue?.dueDate) || '-' }}
               </div>
             </div>
             <div class="kpi">
@@ -212,12 +220,12 @@ watch(purchaseId, () => {
             empty-text="Nenhuma parcela encontrada."
           >
             <template #cell-amount="{ row }">{{ formatMoney(row.amount) }}</template>
-            <template #cell-dueDate="{ row }">{{ new Date(row.dueDate).toLocaleDateString('pt-BR') }}</template>
+            <template #cell-dueDate="{ row }">{{ formatDate(row.dueDate) }}</template>
             <template #cell-status="{ row }">
               <span class="badge" :class="row.paid ? 'success' : ''">{{ row.paid ? 'Pago' : 'Pendente' }}</span>
             </template>
             <template #cell-paidDate="{ row }">
-              {{ row.paidDate ? new Date(row.paidDate).toLocaleDateString('pt-BR') : '-' }}
+              {{ formatDate(row.paidDate) || '-' }}
             </template>
             <template #cell-actions="{ row }">
               <div class="actions">

@@ -236,4 +236,13 @@ export interface DashboardTotals {
 }
 
 export { formatMoney, moneyPolarity, parseMoneyInput } from '@/utils/money'
+export {
+  compareDateStrings,
+  dateInputToIso,
+  formatDate,
+  formatDateTime,
+  parseDateForSort,
+  todayDateInputValue,
+  toDateInputValue,
+} from '@/utils/date'
 

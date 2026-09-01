@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from 'vue'
 import api from '@/api/client'
-import { formatMoney, type Entry, type EntryDestination, type Reserve } from '@/types'
+import { formatDateTime, formatMoney, type Entry, type EntryDestination, type Reserve } from '@/types'
 import { sumReservedAvailable } from '@/utils/totals'
 import MoneyInput from '@/components/MoneyInput.vue'
 import DataTable from '@/components/DataTable.vue'
@@ -128,7 +128,7 @@ onMounted(async () => {
     </div>
     <div class="panel">
       <DataTable :rows="items" :columns="columns" row-key="id" initial-sort-key="occurredAt" initial-sort-dir="desc">
-        <template #cell-occurredAt="{ row }">{{ new Date(row.occurredAt).toLocaleString('pt-BR') }}</template>
+        <template #cell-occurredAt="{ row }">{{ formatDateTime(row.occurredAt) }}</template>
         <template #cell-destination="{ row }">
           {{ row.destination === 'FreeBalance' ? 'Saldo livre' : row.reserveName }}
         </template>

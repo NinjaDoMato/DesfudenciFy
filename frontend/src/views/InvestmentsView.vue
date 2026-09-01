@@ -3,13 +3,18 @@ import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import api from '@/api/client'
 import {
+  formatDate,
   formatMoney,
+  parseDateForSort,
+  todayDateInputValue,
+  toDateInputValue,
   type BankAccount,
   type DashboardTotals,
   type Investment,
   type InvestmentType,
   type Reserve,
 } from '@/types'
+import DateInput from '@/components/DateInput.vue'
 import { computeInvestmentTotals, computeInvestidoTotals, computeReserveTotals } from '@/utils/totals'
 import MoneyInput from '@/components/MoneyInput.vue'
 import { DisponivelInvestimentoKpi, TotalInvestidoKpi } from '@/components/totals'
@@ -68,7 +73,7 @@ const originalAllocations = ref<AllocationRow[]>([])
 const form = reactive({
   name: '',
   rentability: '',
-  startDate: new Date().toISOString().slice(0, 10),
+  startDate: todayDateInputValue(),
   endDate: '',
   bankAccountId: '',
   investmentTypeId: '',
@@ -98,7 +103,7 @@ const columns: DataTableColumn<Investment>[] = [
   { key: 'reserves', label: 'Origens', sortValue: (row) => row.sourceReserves.length },
   { key: 'startAmount', label: 'Inicial', sortValue: (row) => row.startAmount },
   { key: 'currentAmount', label: 'Atual', sortValue: (row) => row.currentAmount },
-  { key: 'endDate', label: 'Fim', sortValue: (row) => (row.endDate ? new Date(row.endDate) : null) },
+  { key: 'endDate', label: 'Fim', sortValue: (row) => parseDateForSort(row.endDate) },
   { key: 'actions', label: '', sortable: false },
 ]
 
@@ -186,7 +191,7 @@ function resetForm() {
   Object.assign(form, {
     name: '',
     rentability: '',
-    startDate: new Date().toISOString().slice(0, 10),
+    startDate: todayDateInputValue(),
     endDate: '',
     bankAccountId: '',
     investmentTypeId: '',
@@ -206,8 +211,8 @@ function openEdit(item: Investment) {
   Object.assign(form, {
     name: item.name,
     rentability: item.rentability || '',
-    startDate: item.startDate.slice(0, 10),
-    endDate: item.endDate ? item.endDate.slice(0, 10) : '',
+    startDate: toDateInputValue(item.startDate),
+    endDate: toDateInputValue(item.endDate),
     bankAccountId: item.bankAccountId,
     investmentTypeId: item.investmentTypeId,
   })
@@ -421,7 +426,7 @@ onMounted(async () => {
         <template #cell-startAmount="{ row }">{{ formatMoney(row.startAmount) }}</template>
         <template #cell-currentAmount="{ row }">{{ formatMoney(row.currentAmount) }}</template>
         <template #cell-endDate="{ row }">
-          {{ row.endDate ? new Date(row.endDate).toLocaleDateString('pt-BR') : '-' }}
+          {{ formatDate(row.endDate) || '-' }}
         </template>
         <template #cell-actions="{ row }">
           <div class="actions">
@@ -451,8 +456,8 @@ onMounted(async () => {
           <input v-model="form.rentability" maxlength="100" placeholder="Ex.: 100% CDI, 12% a.a." />
           <p class="muted">Apenas registro — não entra em nenhum cálculo.</p>
         </div>
-        <div class="field"><label>Início</label><input v-model="form.startDate" type="date" required /></div>
-        <div class="field"><label>Fim (opcional)</label><input v-model="form.endDate" type="date" /></div>
+        <div class="field"><label>Início</label><DateInput v-model="form.startDate" required /></div>
+        <div class="field"><label>Fim (opcional)</label><DateInput v-model="form.endDate" /></div>
         <div class="field">
           <label>Conta</label>
           <select v-model="form.bankAccountId" required>

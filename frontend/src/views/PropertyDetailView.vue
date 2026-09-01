@@ -15,7 +15,19 @@ import {
   Tooltip,
 } from 'chart.js'
 import api from '@/api/client'
-import { formatMoney, type EntryDestination, type Property, type PropertyExpenseType, type Reserve } from '@/types'
+import {
+  compareDateStrings,
+  dateInputToIso,
+  formatDate,
+  formatMoney,
+  parseDateForSort,
+  todayDateInputValue,
+  type EntryDestination,
+  type Property,
+  type PropertyExpenseType,
+  type Reserve,
+} from '@/types'
+import DateInput from '@/components/DateInput.vue'
 import MoneyInput from '@/components/MoneyInput.vue'
 import DataTable from '@/components/DataTable.vue'
 import IconButton from '@/components/IconButton.vue'
@@ -103,11 +115,11 @@ const expenseForm = reactive({
 const rentForm = reactive({
   amount: 0,
   observation: '',
-  paidAt: new Date().toISOString().slice(0, 10),
+  paidAt: todayDateInputValue(),
 })
 
 const amortizationColumns: DataTableColumn<PropertyAmortization>[] = [
-  { key: 'paidAt', label: 'Data', sortValue: (row) => new Date(row.paidAt) },
+  { key: 'paidAt', label: 'Data', sortValue: (row) => parseDateForSort(row.paidAt) },
   { key: 'amount', label: 'Valor', sortValue: (row) => row.amount },
   { key: 'installmentsAmortized', label: 'Parcelas', sortValue: (row) => row.installmentsAmortized },
   { key: 'observation', label: 'Obs.', sortValue: (row) => row.observation || '' },
@@ -115,7 +127,7 @@ const amortizationColumns: DataTableColumn<PropertyAmortization>[] = [
 ]
 
 const expenseColumns: DataTableColumn<PropertyExpense>[] = [
-  { key: 'occurredAt', label: 'Data', sortValue: (row) => new Date(row.occurredAt) },
+  { key: 'occurredAt', label: 'Data', sortValue: (row) => parseDateForSort(row.occurredAt) },
   { key: 'expenseTypeName', label: 'Tipo', sortValue: (row) => row.expenseTypeName },
   { key: 'amount', label: 'Valor', sortValue: (row) => row.amount },
   { key: 'observation', label: 'Obs.', sortValue: (row) => row.observation },
@@ -123,7 +135,7 @@ const expenseColumns: DataTableColumn<PropertyExpense>[] = [
 ]
 
 const rentColumns: DataTableColumn<PropertyRentPayment>[] = [
-  { key: 'paidAt', label: 'Data', sortValue: (row) => new Date(row.paidAt) },
+  { key: 'paidAt', label: 'Data', sortValue: (row) => parseDateForSort(row.paidAt) },
   { key: 'amount', label: 'Valor', sortValue: (row) => row.amount },
   { key: 'observation', label: 'Obs.', sortValue: (row) => row.observation || '' },
   { key: 'actions', label: '', sortable: false },
@@ -201,7 +213,7 @@ const debtLinePoints = computed<DebtPoint[]>(() => {
   if (!property.value) return []
 
   const amortizations = [...property.value.amortizations].sort((a, b) => {
-    const byDate = new Date(a.paidAt).getTime() - new Date(b.paidAt).getTime()
+    const byDate = compareDateStrings(a.paidAt, b.paidAt)
     if (byDate !== 0) return byDate
     return a.id.localeCompare(b.id)
   })
@@ -214,7 +226,7 @@ const debtLinePoints = computed<DebtPoint[]>(() => {
   for (const item of amortizations) {
     balance = Math.max(0, Math.round((balance - item.amount) * 100) / 100)
     points.push({
-      label: new Date(item.paidAt).toLocaleDateString('pt-BR'),
+      label: formatDate(item.paidAt),
       balance,
     })
   }
@@ -503,12 +515,12 @@ async function addRentPayment() {
     await api.post(`/properties/${propertyId.value}/rent-payments`, {
       amount: Number(rentForm.amount),
       observation: rentForm.observation || null,
-      paidAt: rentForm.paidAt ? new Date(`${rentForm.paidAt}T12:00:00`).toISOString() : null,
+      paidAt: dateInputToIso(rentForm.paidAt),
     })
     Object.assign(rentForm, {
       amount: property.value?.rentalAmount ?? 0,
       observation: '',
-      paidAt: new Date().toISOString().slice(0, 10),
+      paidAt: todayDateInputValue(),
     })
     await load()
     toast.success('Aluguel registrado no caixa.')
@@ -791,7 +803,7 @@ watch(
                   initial-sort-dir="desc"
                   empty-text="Nenhuma amortização registrada."
                 >
-                  <template #cell-paidAt="{ row }">{{ new Date(row.paidAt).toLocaleDateString('pt-BR') }}</template>
+                  <template #cell-paidAt="{ row }">{{ formatDate(row.paidAt) }}</template>
                   <template #cell-amount="{ row }">{{ formatMoney(row.amount) }}</template>
                   <template #cell-observation="{ row }">{{ row.observation || '-' }}</template>
                   <template #cell-actions="{ row }">
@@ -805,7 +817,7 @@ watch(
               <form class="launch-panel" @submit.prevent="addRentPayment">
                 <h3>Registrar aluguel</h3>
                 <div class="field"><label>Valor</label><MoneyInput v-model="rentForm.amount" required /></div>
-                <div class="field"><label>Data</label><input v-model="rentForm.paidAt" type="date" required /></div>
+                <div class="field"><label>Data</label><DateInput v-model="rentForm.paidAt" required /></div>
                 <div class="field"><label>Observação</label><input v-model="rentForm.observation" placeholder="Opcional" /></div>
                 <button class="btn" type="submit">Registrar pagamento</button>
               </form>
@@ -821,7 +833,7 @@ watch(
                   initial-sort-dir="desc"
                   empty-text="Nenhum aluguel registrado."
                 >
-                  <template #cell-paidAt="{ row }">{{ new Date(row.paidAt).toLocaleDateString('pt-BR') }}</template>
+                  <template #cell-paidAt="{ row }">{{ formatDate(row.paidAt) }}</template>
                   <template #cell-amount="{ row }">{{ formatMoney(row.amount) }}</template>
                   <template #cell-observation="{ row }">{{ row.observation || '-' }}</template>
                   <template #cell-actions="{ row }">
@@ -879,7 +891,7 @@ watch(
                   initial-sort-dir="desc"
                   empty-text="Nenhum gasto registrado."
                 >
-                  <template #cell-occurredAt="{ row }">{{ new Date(row.occurredAt).toLocaleDateString('pt-BR') }}</template>
+                  <template #cell-occurredAt="{ row }">{{ formatDate(row.occurredAt) }}</template>
                   <template #cell-expenseTypeName="{ row }">{{ row.expenseTypeName }}</template>
                   <template #cell-amount="{ row }">{{ formatMoney(row.amount) }}</template>
                   <template #cell-actions="{ row }">

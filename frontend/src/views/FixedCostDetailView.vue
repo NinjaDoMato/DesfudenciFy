@@ -2,7 +2,16 @@
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import api from '@/api/client'
-import { formatMoney, type CostPayment, type FixedCost, type Reserve } from '@/types'
+import {
+  formatDate,
+  formatDateTime,
+  formatMoney,
+  toDateInputValue,
+  type CostPayment,
+  type FixedCost,
+  type Reserve,
+} from '@/types'
+import DateInput from '@/components/DateInput.vue'
 import MoneyInput from '@/components/MoneyInput.vue'
 import DataTable from '@/components/DataTable.vue'
 import IconButton from '@/components/IconButton.vue'
@@ -66,7 +75,7 @@ async function load() {
       description: costRes.data.description,
       amount: costRes.data.amount,
       recurrence: costRes.data.recurrence,
-      dueDate: costRes.data.dueDate ? costRes.data.dueDate.slice(0, 10) : '',
+      dueDate: toDateInputValue(costRes.data.dueDate),
       reserveId: costRes.data.reserveId || '',
     })
     payForm.paidAmount = costRes.data.amount
@@ -157,7 +166,7 @@ watch(costId, () => {
           </div>
           <div class="field">
             <label>Data de vencimento</label>
-            <input v-model="form.dueDate" type="date" required />
+            <DateInput v-model="form.dueDate" required />
             <span class="muted hint">Avança automaticamente ao pagar.</span>
           </div>
           <div class="field">
@@ -171,7 +180,7 @@ watch(costId, () => {
             <div class="kpi">
               <div class="label">Próximo vencimento</div>
               <div class="value value-sm">
-                {{ cost.dueDate ? new Date(cost.dueDate).toLocaleDateString('pt-BR') : '-' }}
+                {{ formatDate(cost.dueDate) || '-' }}
               </div>
             </div>
             <div class="kpi">
@@ -220,7 +229,7 @@ watch(costId, () => {
               empty-text="Nenhum pagamento registrado."
             >
               <template #cell-datePaid="{ row }">
-                {{ new Date(row.datePaid).toLocaleString('pt-BR') }}
+                {{ formatDateTime(row.datePaid) }}
               </template>
               <template #cell-paidAmount="{ row }">{{ formatMoney(row.paidAmount) }}</template>
               <template #cell-actions="{ row }">

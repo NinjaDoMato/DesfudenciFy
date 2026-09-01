@@ -2,7 +2,7 @@
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 import api from '@/api/client'
-import { formatMoney, type Entry, type Investment, type Reserve } from '@/types'
+import { formatDateTime, formatMoney, type Entry, type Investment, type Reserve } from '@/types'
 import MoneyInput from '@/components/MoneyInput.vue'
 import DataTable from '@/components/DataTable.vue'
 import IconButton from '@/components/IconButton.vue'
@@ -235,7 +235,7 @@ watch(
               initial-sort-dir="desc"
               empty-text="Nenhum lançamento nesta reserva."
             >
-              <template #cell-occurredAt="{ row }">{{ new Date(row.occurredAt).toLocaleString('pt-BR') }}</template>
+              <template #cell-occurredAt="{ row }">{{ formatDateTime(row.occurredAt) }}</template>
               <template #cell-amount="{ row }">
                 <span :style="{ color: row.amount >= 0 ? 'var(--success)' : 'var(--danger)' }">{{ formatMoney(row.amount) }}</span>
               </template>

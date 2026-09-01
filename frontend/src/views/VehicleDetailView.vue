@@ -3,6 +3,7 @@ import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import api from '@/api/client'
 import {
+  formatDate,
   formatMoney,
   type EntryDestination,
   type Reserve,
@@ -312,7 +313,7 @@ watch(vehicleId, () => {
                   initial-sort-dir="desc"
                   empty-text="Nenhum gasto registrado."
                 >
-                  <template #cell-occurredAt="{ row }">{{ new Date(row.occurredAt).toLocaleDateString('pt-BR') }}</template>
+                  <template #cell-occurredAt="{ row }">{{ formatDate(row.occurredAt) }}</template>
                   <template #cell-expenseTypeName="{ row }">{{ row.expenseTypeName }}</template>
                   <template #cell-amount="{ row }">{{ formatMoney(row.amount) }}</template>
                   <template #cell-actions="{ row }">

@@ -2,7 +2,7 @@
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import api from '@/api/client'
-import { formatMoney, type Investment, type Reserve } from '@/types'
+import { formatDate, formatMoney, type Investment, type Reserve } from '@/types'
 import MoneyInput from '@/components/MoneyInput.vue'
 import DataTable from '@/components/DataTable.vue'
 import LiquidationModal from '@/components/LiquidationModal.vue'
@@ -130,12 +130,12 @@ watch(investmentId, () => {
             </div>
             <div>
               <div class="muted label">Início</div>
-              <div>{{ new Date(investment.startDate).toLocaleDateString('pt-BR') }}</div>
+              <div>{{ formatDate(investment.startDate) }}</div>
             </div>
             <div>
               <div class="muted label">Fim</div>
               <div>
-                {{ investment.endDate ? new Date(investment.endDate).toLocaleDateString('pt-BR') : '-' }}
+                {{ formatDate(investment.endDate) || '-' }}
               </div>
             </div>
           </div>

@@ -2,7 +2,16 @@
 import { onMounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import api from '@/api/client'
-import { formatMoney, type Purchase, type Reserve } from '@/types'
+import {
+  compareDateStrings,
+  formatDate,
+  formatMoney,
+  parseDateForSort,
+  todayDateInputValue,
+  type Purchase,
+  type Reserve,
+} from '@/types'
+import DateInput from '@/components/DateInput.vue'
 import MoneyInput from '@/components/MoneyInput.vue'
 import DataTable from '@/components/DataTable.vue'
 import IconButton from '@/components/IconButton.vue'
@@ -30,7 +39,7 @@ const form = reactive({
   productUrl: '',
   totalAmount: 0,
   installmentCount: 1,
-  firstDueDate: new Date().toISOString().slice(0, 10),
+  firstDueDate: todayDateInputValue(),
   sourceId: '',
 })
 
@@ -39,7 +48,7 @@ const columns: DataTableColumn<PurchaseRow>[] = [
   { key: 'totalAmount', label: 'Valor total', sortValue: (row) => row.totalAmount },
   { key: 'monthlyAmount', label: 'Parcela', sortValue: (row) => row.monthlyAmount },
   { key: 'remaining', label: 'Restantes', sortValue: (row) => row.remainingCount },
-  { key: 'nextDueDate', label: 'Próximo vencimento', sortValue: (row) => (row.nextDueDate ? new Date(row.nextDueDate) : null) },
+  { key: 'nextDueDate', label: 'Próximo vencimento', sortValue: (row) => parseDateForSort(row.nextDueDate) },
   { key: 'source', label: 'Origem', sortValue: (row) => sourceLabel(row) },
   { key: 'status', label: 'Status', sortValue: (row) => (row.isActive ? 1 : 0) },
   { key: 'actions', label: '', sortable: false },
@@ -68,7 +77,7 @@ function toRow(item: Purchase): PurchaseRow {
   const remaining = item.installments.filter((installment) => !installment.paid)
   const next = remaining
     .slice()
-    .sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime())[0]
+    .sort((a, b) => compareDateStrings(a.dueDate, b.dueDate))[0]
 
   return {
     ...item,
@@ -96,7 +105,7 @@ function openCreate() {
     productUrl: '',
     totalAmount: 0,
     installmentCount: 1,
-    firstDueDate: new Date().toISOString().slice(0, 10),
+    firstDueDate: todayDateInputValue(),
     sourceId: '',
   })
   showForm.value = true
@@ -153,7 +162,7 @@ onMounted(async () => {
         <template #cell-monthlyAmount="{ row }">{{ formatMoney(row.monthlyAmount) }}</template>
         <template #cell-remaining="{ row }">{{ row.remainingCount }} / {{ row.installmentCount }}</template>
         <template #cell-nextDueDate="{ row }">
-          {{ row.nextDueDate ? new Date(row.nextDueDate).toLocaleDateString('pt-BR') : '-' }}
+          {{ formatDate(row.nextDueDate) || '-' }}
         </template>
         <template #cell-source="{ row }">{{ sourceLabel(row) }}</template>
         <template #cell-status="{ row }">
@@ -180,7 +189,7 @@ onMounted(async () => {
         <div class="field"><label>URL do produto</label><input v-model="form.productUrl" /></div>
         <div class="field"><label>Valor total</label><MoneyInput v-model="form.totalAmount" required /></div>
         <div class="field"><label>Parcelas</label><input v-model.number="form.installmentCount" type="number" min="1" required /></div>
-        <div class="field"><label>Primeiro vencimento</label><input v-model="form.firstDueDate" type="date" required /></div>
+        <div class="field"><label>Primeiro vencimento</label><DateInput v-model="form.firstDueDate" required /></div>
         <div class="field">
           <label>Origem do pagamento (opcional)</label>
           <select v-model="form.sourceId">

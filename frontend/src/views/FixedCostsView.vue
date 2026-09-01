@@ -2,7 +2,8 @@
 import { onMounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import api from '@/api/client'
-import { formatMoney, type FixedCost, type Reserve } from '@/types'
+import { formatDate, formatMoney, parseDateForSort, type FixedCost, type Reserve } from '@/types'
+import DateInput from '@/components/DateInput.vue'
 import MoneyInput from '@/components/MoneyInput.vue'
 import DataTable from '@/components/DataTable.vue'
 import IconButton from '@/components/IconButton.vue'
@@ -27,7 +28,7 @@ const columns: DataTableColumn<FixedCost>[] = [
   { key: 'name', label: 'Nome', sortValue: (row) => row.name },
   { key: 'amount', label: 'Valor', sortValue: (row) => row.amount },
   { key: 'recurrence', label: 'Recorrência', sortValue: (row) => row.recurrence },
-  { key: 'dueDate', label: 'Vencimento', sortValue: (row) => (row.dueDate ? new Date(row.dueDate) : null) },
+  { key: 'dueDate', label: 'Vencimento', sortValue: (row) => parseDateForSort(row.dueDate) },
   { key: 'reserveName', label: 'Reserva', sortValue: (row) => row.reserveName || '' },
   { key: 'payments', label: 'Pagamentos', sortValue: (row) => row.payments.length },
   { key: 'actions', label: '', sortable: false },
@@ -115,7 +116,7 @@ onMounted(async () => {
         <template #cell-amount="{ row }">{{ formatMoney(row.amount) }}</template>
         <template #cell-recurrence="{ row }">{{ recurrenceLabel[row.recurrence] || row.recurrence }}</template>
         <template #cell-dueDate="{ row }">
-          {{ row.dueDate ? new Date(row.dueDate).toLocaleDateString('pt-BR') : '-' }}
+          {{ formatDate(row.dueDate) || '-' }}
         </template>
         <template #cell-reserveName="{ row }">{{ row.reserveName || '-' }}</template>
         <template #cell-payments="{ row }">{{ row.payments.length }}</template>
@@ -148,7 +149,7 @@ onMounted(async () => {
         </div>
         <div class="field">
           <label>Data de vencimento</label>
-          <input v-model="form.dueDate" type="date" required />
+          <DateInput v-model="form.dueDate" required />
           <span class="muted hint">Usada na dashboard para próximas contas. Avança automaticamente ao pagar.</span>
         </div>
         <div class="field">
