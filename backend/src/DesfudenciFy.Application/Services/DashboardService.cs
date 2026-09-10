@@ -219,12 +219,12 @@ public class DashboardService
 
     public async Task<IReadOnlyList<UpcomingBillDto>> GetUpcomingBillsAsync(CancellationToken cancellationToken = default)
     {
-        // Dashboard "Próximas contas": only bills due today through day +15, nearest first.
+        // Dashboard "Próximas contas": overdue bills plus those due through day +15, nearest first.
         var now = DateTime.UtcNow.Date;
         var horizon = now.AddDays(15);
 
         var pendingCosts = await _db.FixedCosts
-            .Where(c => c.IsActive && c.DueDate != null && c.DueDate >= now && c.DueDate <= horizon)
+            .Where(c => c.IsActive && c.DueDate != null && c.DueDate <= horizon)
             .OrderBy(c => c.DueDate)
             .Take(20)
             .Select(c => new UpcomingBillDto("FixedCost", c.Id, c.Name, c.Amount, c.DueDate, c.Id))
@@ -232,7 +232,7 @@ public class DashboardService
 
         var installments = await _db.Installments
             .Include(i => i.Purchase)
-            .Where(i => !i.Paid && i.DueDate >= now && i.DueDate <= horizon)
+            .Where(i => !i.Paid && i.DueDate <= horizon)
             .OrderBy(i => i.DueDate)
             .Take(20)
             .Select(i => new UpcomingBillDto("Installment", i.Id, i.Purchase.Name, i.Amount, i.DueDate, i.PurchaseId))

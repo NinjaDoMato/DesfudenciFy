@@ -7,7 +7,7 @@ namespace DesfudenciFy.IntegrationTests;
 public class DashboardUpcomingBillsTests
 {
     [Fact]
-    public async Task Upcoming_bills_should_include_only_items_due_within_next_15_days_ordered_nearest_first()
+    public async Task Upcoming_bills_should_include_overdue_and_items_due_within_next_15_days_ordered_nearest_first()
     {
         await using var fx = new TestDbFixture();
         var today = DateTime.UtcNow.Date;
@@ -51,17 +51,23 @@ public class DashboardUpcomingBillsTests
         var dashboard = new DashboardService(fx.AppDb, fx.Balance);
         var bills = await dashboard.GetUpcomingBillsAsync();
 
-        Assert.Equal(new[] { "Today", "In7", "In15" }, bills.Select(b => b.Name).ToArray());
+        Assert.Equal(new[] { "Overdue", "Today", "In7", "In15" }, bills.Select(b => b.Name).ToArray());
         Assert.All(bills, b => Assert.Equal("FixedCost", b.Kind));
         Assert.True(bills.Select(b => b.DueDate).SequenceEqual(bills.Select(b => b.DueDate).OrderBy(d => d)));
     }
 
     [Fact]
-    public async Task Upcoming_bills_should_apply_same_15_day_window_to_installments()
+    public async Task Upcoming_bills_should_apply_same_window_to_installments_including_overdue()
     {
         await using var fx = new TestDbFixture();
         var today = DateTime.UtcNow.Date;
 
+        await fx.Purchases.CreateAsync(new CreatePurchaseRequest(
+            "OverdueInstallment",
+            null,
+            50m,
+            1,
+            today.AddDays(-3)));
         await fx.Purchases.CreateAsync(new CreatePurchaseRequest(
             "WithinWindow",
             null,
@@ -78,7 +84,9 @@ public class DashboardUpcomingBillsTests
         var dashboard = new DashboardService(fx.AppDb, fx.Balance);
         var bills = await dashboard.GetUpcomingBillsAsync();
 
+        Assert.Contains(bills, b => b.Kind == "Installment" && b.Name == "OverdueInstallment");
         Assert.Contains(bills, b => b.Kind == "Installment" && b.Name == "WithinWindow");
         Assert.DoesNotContain(bills, b => b.Name == "OutsideWindow");
+        Assert.Equal("OverdueInstallment", bills.First().Name);
     }
 }
