@@ -358,6 +358,11 @@ th {
   color: var(--success);
 }
 
+.badge.warning {
+  background: rgba(251, 191, 36, 0.16);
+  color: var(--warning);
+}
+
 .badge.danger {
   background: rgba(251, 113, 133, 0.14);
   color: var(--danger);

@@ -1,7 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import {
   compareDateStrings,
+  daysUntilDue,
   displayToDateInputValue,
+  dueDateUrgency,
+  dueDateUrgencyLabel,
   formatDate,
   formatDateTime,
   maskDateInput,
@@ -63,5 +66,36 @@ describe('formatDateTime', () => {
   it('should format datetime with dd/mm/yyyy date part', () => {
     const formatted = formatDateTime('2027-03-01T15:30:00.000Z')
     expect(formatted.startsWith('01/03/2027')).toBe(true)
+  })
+})
+
+describe('dueDateUrgency', () => {
+  const today = '2026-09-10'
+
+  it('should mark past dates as overdue', () => {
+    expect(dueDateUrgency('2026-09-09', today)).toBe('overdue')
+    expect(dueDateUrgencyLabel('2026-09-01T00:00:00.000Z', today)).toBe('Atrasado')
+  })
+
+  it('should mark due within 0–5 days as soon', () => {
+    expect(dueDateUrgency('2026-09-10', today)).toBe('soon')
+    expect(dueDateUrgency('2026-09-15', today)).toBe('soon')
+    expect(dueDateUrgencyLabel('2026-09-10', today)).toBe('Vence hoje')
+    expect(dueDateUrgencyLabel('2026-09-11', today)).toBe('Em 1 dia')
+    expect(dueDateUrgencyLabel('2026-09-15', today)).toBe('Em 5 dias')
+  })
+
+  it('should mark due within 6–10 days as upcoming', () => {
+    expect(dueDateUrgency('2026-09-16', today)).toBe('upcoming')
+    expect(dueDateUrgency('2026-09-20', today)).toBe('upcoming')
+    expect(dueDateUrgencyLabel('2026-09-16', today)).toBe('Vence em 6 dias')
+    expect(dueDateUrgencyLabel('2026-09-20', today)).toBe('Vence em 10 dias')
+  })
+
+  it('should return null beyond 10 days or for invalid dates', () => {
+    expect(dueDateUrgency('2026-09-21', today)).toBeNull()
+    expect(dueDateUrgencyLabel('2026-09-21', today)).toBeNull()
+    expect(dueDateUrgency(null, today)).toBeNull()
+    expect(daysUntilDue('2026-09-18', today)).toBe(8)
   })
 })

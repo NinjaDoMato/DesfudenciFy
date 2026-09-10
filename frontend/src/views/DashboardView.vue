@@ -13,6 +13,11 @@ import {
 } from 'chart.js'
 import api from '@/api/client'
 import { formatDate, formatMoney, parseDateForSort, type DashboardTotals } from '@/types'
+import {
+  dueDateUrgency,
+  dueDateUrgencyLabel,
+  type DueDateUrgency,
+} from '@/utils/date'
 import { computeInvestidoTotals, computePatrimonioTotals } from '@/utils/totals'
 import DataTable from '@/components/DataTable.vue'
 import {
@@ -280,6 +285,19 @@ const doughnutOptions = computed(() => ({
   },
 }))
 
+const URGENCY_BADGE_CLASS: Record<DueDateUrgency, string> = {
+  overdue: 'danger',
+  soon: 'warning',
+  upcoming: 'success',
+}
+
+function dueDateBadge(dueDate: string | null | undefined): { label: string; className: string } | null {
+  const label = dueDateUrgencyLabel(dueDate)
+  const urgency = dueDateUrgency(dueDate)
+  if (!label || !urgency) return null
+  return { label, className: URGENCY_BADGE_CLASS[urgency] }
+}
+
 function openInvestment(row: UpcomingInvestment) {
   void router.push({ name: 'investment-detail', params: { id: row.id } })
 }
@@ -434,7 +452,14 @@ onMounted(async () => {
           empty-text="Nenhum vencimento próximo."
           @row-click="openInvestment"
         >
-          <template #cell-endDate="{ row }">{{ formatDate(row.endDate) }}</template>
+          <template #cell-endDate="{ row }">
+            <span class="due-date-cell">
+              <span>{{ formatDate(row.endDate) }}</span>
+              <template v-for="badge in [dueDateBadge(row.endDate)]" :key="`${row.id}-urgency`">
+                <span v-if="badge" class="badge" :class="badge.className">{{ badge.label }}</span>
+              </template>
+            </span>
+          </template>
           <template #cell-currentAmount="{ row }">{{ formatMoney(row.currentAmount) }}</template>
         </DataTable>
       </div>
@@ -454,7 +479,13 @@ onMounted(async () => {
             <span class="badge">{{ row.kind === 'FixedCost' ? 'Conta fixa' : 'Parcelamento' }}</span>
           </template>
           <template #cell-dueDate="{ row }">
-            {{ formatDate(row.dueDate) || '-' }}
+            <span v-if="!row.dueDate">-</span>
+            <span v-else class="due-date-cell">
+              <span>{{ formatDate(row.dueDate) }}</span>
+              <template v-for="badge in [dueDateBadge(row.dueDate)]" :key="`${row.rowKey}-urgency`">
+                <span v-if="badge" class="badge" :class="badge.className">{{ badge.label }}</span>
+              </template>
+            </span>
           </template>
           <template #cell-amount="{ row }">{{ formatMoney(row.amount) }}</template>
         </DataTable>
@@ -464,6 +495,13 @@ onMounted(async () => {
 </template>
 
 <style scoped>
+.due-date-cell {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
 .charts-stack {
   display: grid;
   gap: 1rem;

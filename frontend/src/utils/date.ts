@@ -137,3 +137,54 @@ export function dateInputToIso(value: string): string | null {
   if (!toDateInputValue(value)) return null
   return new Date(`${toDateInputValue(value)}T12:00:00`).toISOString()
 }
+
+export type DueDateUrgency = 'overdue' | 'soon' | 'upcoming'
+
+const MS_PER_DAY = 24 * 60 * 60 * 1000
+
+/**
+ * Calendar-day difference between today and a due date (due − today).
+ * Negative means overdue. Returns null when the due date cannot be parsed.
+ */
+export function daysUntilDue(
+  dueDate: string | null | undefined,
+  today: string = todayDateInputValue(),
+): number | null {
+  const due = parseDateForSort(dueDate)
+  const now = parseDateForSort(today)
+  if (!due || !now) return null
+  return Math.round((due.getTime() - now.getTime()) / MS_PER_DAY)
+}
+
+/**
+ * Classifies due-date urgency using calendar dates only.
+ * Precedence: overdue (before today) → soon (0–5 days) → upcoming (6–10 days) → null.
+ */
+export function dueDateUrgency(
+  dueDate: string | null | undefined,
+  today: string = todayDateInputValue(),
+): DueDateUrgency | null {
+  const days = daysUntilDue(dueDate, today)
+  if (days === null) return null
+  if (days < 0) return 'overdue'
+  if (days <= 5) return 'soon'
+  if (days <= 10) return 'upcoming'
+  return null
+}
+
+/**
+ * Portuguese label for due-date urgency next to a formatted date.
+ */
+export function dueDateUrgencyLabel(
+  dueDate: string | null | undefined,
+  today: string = todayDateInputValue(),
+): string | null {
+  const days = daysUntilDue(dueDate, today)
+  if (days === null) return null
+  if (days < 0) return 'Atrasado'
+  if (days === 0) return 'Vence hoje'
+  if (days === 1) return 'Em 1 dia'
+  if (days <= 5) return `Em ${days} dias`
+  if (days <= 10) return `Vence em ${days} dias`
+  return null
+}

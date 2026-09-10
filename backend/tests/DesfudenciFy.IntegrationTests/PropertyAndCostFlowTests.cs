@@ -94,7 +94,7 @@ public class PropertyAndCostFlowTests
             due,
             reserve.Id));
 
-        var payment = await fx.FixedCosts.PayAsync(cost.Id, new CreateCostPaymentRequest(100m, null));
+        var payment = await fx.FixedCosts.PayAsync(cost.Id, new CreateCostPaymentRequest(100m, due));
         Assert.Equal(100m, payment.PaidAmount);
 
         var updated = (await fx.FixedCosts.ListAsync()).Single(c => c.Id == cost.Id);
@@ -104,6 +104,78 @@ public class PropertyAndCostFlowTests
         var debit = await fx.Db.Entries.SingleAsync(e => e.Id == payment.EntryId);
         Assert.Equal(-100m, debit.Amount);
         Assert.Equal(reserve.Id, debit.ReserveId);
+    }
+
+    [Fact]
+    public async Task Paying_fixed_cost_should_advance_due_date_from_last_payment_date()
+    {
+        await using var fx = new TestDbFixture();
+        var due = new DateTime(2026, 8, 10, 0, 0, 0, DateTimeKind.Utc);
+        var paidOn = new DateTime(2026, 8, 20, 15, 30, 0, DateTimeKind.Utc);
+        var cost = await fx.FixedCosts.CreateAsync(new UpsertFixedCostRequest(
+            "Internet",
+            "",
+            100m,
+            "Month",
+            due,
+            null));
+
+        await fx.FixedCosts.PayAsync(cost.Id, new CreateCostPaymentRequest(100m, paidOn));
+
+        var updated = await fx.FixedCosts.GetAsync(cost.Id);
+        Assert.Equal(new DateTime(2026, 9, 20, 0, 0, 0, DateTimeKind.Utc), updated.DueDate);
+    }
+
+    [Fact]
+    public async Task Deleting_last_fixed_cost_payment_should_restore_due_date_to_payment_date()
+    {
+        await using var fx = new TestDbFixture();
+        var due = new DateTime(2026, 8, 10, 0, 0, 0, DateTimeKind.Utc);
+        var paidOn = new DateTime(2026, 8, 20, 0, 0, 0, DateTimeKind.Utc);
+        var cost = await fx.FixedCosts.CreateAsync(new UpsertFixedCostRequest(
+            "Internet",
+            "",
+            100m,
+            "Month",
+            due,
+            null));
+
+        var payment = await fx.FixedCosts.PayAsync(cost.Id, new CreateCostPaymentRequest(100m, paidOn));
+        Assert.Equal(new DateTime(2026, 9, 20, 0, 0, 0, DateTimeKind.Utc),
+            (await fx.FixedCosts.GetAsync(cost.Id)).DueDate);
+
+        await fx.FixedCosts.DeletePaymentAsync(cost.Id, payment.Id);
+
+        var afterDelete = await fx.FixedCosts.GetAsync(cost.Id);
+        Assert.Equal(paidOn, afterDelete.DueDate);
+        Assert.Empty(afterDelete.Payments);
+    }
+
+    [Fact]
+    public async Task Deleting_latest_fixed_cost_payment_should_resync_due_date_from_remaining_last_payment()
+    {
+        await using var fx = new TestDbFixture();
+        var due = new DateTime(2026, 8, 10, 0, 0, 0, DateTimeKind.Utc);
+        var firstPaid = new DateTime(2026, 8, 10, 0, 0, 0, DateTimeKind.Utc);
+        var secondPaid = new DateTime(2026, 9, 12, 0, 0, 0, DateTimeKind.Utc);
+        var cost = await fx.FixedCosts.CreateAsync(new UpsertFixedCostRequest(
+            "Internet",
+            "",
+            100m,
+            "Month",
+            due,
+            null));
+
+        await fx.FixedCosts.PayAsync(cost.Id, new CreateCostPaymentRequest(100m, firstPaid));
+        var second = await fx.FixedCosts.PayAsync(cost.Id, new CreateCostPaymentRequest(100m, secondPaid));
+        Assert.Equal(new DateTime(2026, 10, 12, 0, 0, 0, DateTimeKind.Utc),
+            (await fx.FixedCosts.GetAsync(cost.Id)).DueDate);
+
+        await fx.FixedCosts.DeletePaymentAsync(cost.Id, second.Id);
+
+        var afterDelete = await fx.FixedCosts.GetAsync(cost.Id);
+        Assert.Equal(new DateTime(2026, 9, 10, 0, 0, 0, DateTimeKind.Utc), afterDelete.DueDate);
+        Assert.Single(afterDelete.Payments);
     }
 
     [Fact]
@@ -146,7 +218,7 @@ public class PropertyAndCostFlowTests
 
         var payment = await fx.FixedCosts.PayAsync(
             cost.Id,
-            new CreateCostPaymentRequest(80m, null, DebitFromFreeBalance: true));
+            new CreateCostPaymentRequest(80m, due, DebitFromFreeBalance: true));
 
         Assert.NotNull(payment.EntryId);
         Assert.Equal(170m, await fx.Balance.GetFreeBalanceAvailableAsync());

@@ -121,9 +121,8 @@ public class FixedCostService
             EntryId = entryId
         };
         _db.Add(payment);
-        await _db.SaveChangesAsync(cancellationToken);
-
-        AdvanceDueDate(cost);
+        cost.Payments.Add(payment);
+        SyncDueDateFromLastPayment(cost);
         await _db.SaveChangesAsync(cancellationToken);
 
         return new CostPaymentDto(payment.Id, payment.PaidAmount, payment.DatePaid, payment.EntryId);
@@ -144,7 +143,9 @@ public class FixedCostService
             }
         }
 
+        var removedDatePaid = payment.DatePaid;
         _db.Remove(payment);
+        SyncDueDateFromLastPayment(cost, excludingPaymentId: payment.Id, fallbackDueDateWhenEmpty: removedDatePaid);
         await _db.SaveChangesAsync(cancellationToken);
     }
 
@@ -158,11 +159,32 @@ public class FixedCostService
             ? DateTime.SpecifyKind(dueDate.Value.Date, DateTimeKind.Utc)
             : null;
 
-    private static void AdvanceDueDate(FixedCost cost)
+    /// <summary>
+    /// Sets next DueDate from the chronologically latest payment + one recurrence step.
+    /// When no payments remain (after delete), restores DueDate to the removed payment's date (that cycle is unpaid again).
+    /// </summary>
+    private static void SyncDueDateFromLastPayment(
+        FixedCost cost,
+        Guid? excludingPaymentId = null,
+        DateTime? fallbackDueDateWhenEmpty = null)
     {
-        if (!cost.DueDate.HasValue) return;
+        var lastPayment = cost.Payments
+            .Where(p => excludingPaymentId is null || p.Id != excludingPaymentId.Value)
+            .OrderByDescending(p => p.DatePaid)
+            .ThenByDescending(p => p.Id)
+            .FirstOrDefault();
 
-        cost.DueDate = RecurrenceCalculator.AdvanceDueDate(cost.DueDate.Value, cost.Recurrence);
+        if (lastPayment is not null)
+        {
+            cost.DueDate = NormalizeDueDate(
+                RecurrenceCalculator.AdvanceDueDate(lastPayment.DatePaid, cost.Recurrence));
+            return;
+        }
+
+        if (fallbackDueDateWhenEmpty.HasValue)
+        {
+            cost.DueDate = NormalizeDueDate(fallbackDueDateWhenEmpty);
+        }
     }
 
     private static FixedCostDto Map(FixedCost cost) =>
