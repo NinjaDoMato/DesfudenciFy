@@ -39,6 +39,7 @@ const form = reactive({
 
 const payForm = reactive({
   paidAmount: 0,
+  debitFromFreeBalance: false,
 })
 
 const recurrenceLabel: Record<string, string> = {
@@ -106,8 +107,10 @@ async function saveCost() {
 async function pay() {
   paying.value = true
   try {
+    const linkedToMontinho = Boolean(cost.value?.reserveId)
     await api.post(`/fixed-costs/${costId.value}/payments`, {
       paidAmount: Number(payForm.paidAmount),
+      debitFromFreeBalance: !linkedToMontinho && payForm.debitFromFreeBalance,
     })
     await load()
     toast.success('Pagamento registrado.')
@@ -200,16 +203,25 @@ watch(costId, () => {
         <div class="side-stack">
           <div class="panel">
             <h2>Registrar pagamento</h2>
-            <p v-if="cost.reserveName" class="muted pay-hint">
-              Será debitado da reserva <strong>{{ cost.reserveName }}</strong>.
+            <p v-if="cost.reserveId" class="muted pay-hint">
+              Será debitado do montinho <strong>{{ cost.reserveName }}</strong>.
+            </p>
+            <p v-else-if="payForm.debitFromFreeBalance" class="muted pay-hint">
+              Será debitado do <strong>saldo livre</strong>.
             </p>
             <p v-else class="muted pay-hint">
-              Sem reserva vinculada — o pagamento será só registrado no histórico.
+              Sem montinho vinculado — o pagamento será só registrado no histórico, salvo se você debitar do saldo livre.
             </p>
             <form class="pay-form" @submit.prevent="pay">
               <div class="field">
                 <label>Valor pago</label>
                 <MoneyInput v-model="payForm.paidAmount" required />
+              </div>
+              <div v-if="!cost.reserveId" class="field pay-option">
+                <label>
+                  <input v-model="payForm.debitFromFreeBalance" type="checkbox" />
+                  Debitar do saldo livre
+                </label>
               </div>
               <button class="btn" type="submit" :disabled="paying">
                 {{ paying ? 'Pagando...' : 'Pagar' }}
@@ -295,6 +307,17 @@ watch(costId, () => {
 
 .pay-form .field {
   margin-bottom: 0;
+}
+
+.pay-form .pay-option {
+  grid-column: 1 / -1;
+}
+
+.pay-form .pay-option label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 500;
 }
 
 @media (max-width: 1000px) {

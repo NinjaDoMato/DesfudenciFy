@@ -84,16 +84,29 @@ public class FixedCostService
         var cost = await LoadAsync(id, cancellationToken);
         Guid? entryId = null;
 
+        EntryDestination? debitDestination = null;
+        Guid? debitReserveId = null;
+
         if (cost.ReserveId.HasValue)
         {
-            await _balance.EnsureAvailableAsync(EntryDestination.Reserve, cost.ReserveId, request.PaidAmount, cancellationToken);
+            debitDestination = EntryDestination.Reserve;
+            debitReserveId = cost.ReserveId;
+        }
+        else if (request.DebitFromFreeBalance)
+        {
+            debitDestination = EntryDestination.FreeBalance;
+        }
+
+        if (debitDestination.HasValue)
+        {
+            await _balance.EnsureAvailableAsync(debitDestination.Value, debitReserveId, request.PaidAmount, cancellationToken);
             var entry = new Entry
             {
                 Amount = -request.PaidAmount,
                 Observation = $"Pagamento - {cost.Name}",
                 OccurredAt = request.DatePaid?.ToUniversalTime() ?? DateTime.UtcNow,
-                Destination = EntryDestination.Reserve,
-                ReserveId = cost.ReserveId
+                Destination = debitDestination.Value,
+                ReserveId = debitReserveId
             };
             _db.Add(entry);
             await _db.SaveChangesAsync(cancellationToken);

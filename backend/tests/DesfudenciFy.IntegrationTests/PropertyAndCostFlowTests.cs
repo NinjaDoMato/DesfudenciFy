@@ -128,4 +128,59 @@ public class PropertyAndCostFlowTests
         Assert.Equal(50m, await fx.Balance.GetReserveAvailableAsync(reserve.Id));
         Assert.Empty(await fx.Db.CostPayments.ToListAsync());
     }
+
+    [Fact]
+    public async Task Paying_fixed_cost_without_reserve_can_debit_free_balance()
+    {
+        await using var fx = new TestDbFixture();
+        await fx.CreditFreeAsync(250m);
+
+        var due = new DateTime(2026, 8, 10, 0, 0, 0, DateTimeKind.Utc);
+        var cost = await fx.FixedCosts.CreateAsync(new UpsertFixedCostRequest(
+            "Água",
+            "",
+            80m,
+            "Month",
+            due,
+            null));
+
+        var payment = await fx.FixedCosts.PayAsync(
+            cost.Id,
+            new CreateCostPaymentRequest(80m, null, DebitFromFreeBalance: true));
+
+        Assert.NotNull(payment.EntryId);
+        Assert.Equal(170m, await fx.Balance.GetFreeBalanceAvailableAsync());
+
+        var debit = await fx.Db.Entries.SingleAsync(e => e.Id == payment.EntryId);
+        Assert.Equal(-80m, debit.Amount);
+        Assert.Equal(EntryDestination.FreeBalance, debit.Destination);
+        Assert.Null(debit.ReserveId);
+
+        var updated = (await fx.FixedCosts.ListAsync()).Single(c => c.Id == cost.Id);
+        Assert.Equal(due.AddMonths(1), updated.DueDate);
+    }
+
+    [Fact]
+    public async Task Paying_fixed_cost_without_reserve_should_fail_when_free_balance_is_insufficient()
+    {
+        await using var fx = new TestDbFixture();
+        await fx.CreditFreeAsync(20m);
+
+        var cost = await fx.FixedCosts.CreateAsync(new UpsertFixedCostRequest(
+            "Gás",
+            "",
+            80m,
+            "Month",
+            DateTime.UtcNow.Date,
+            null));
+
+        var exception = await Assert.ThrowsAsync<AppException>(() =>
+            fx.FixedCosts.PayAsync(
+                cost.Id,
+                new CreateCostPaymentRequest(80m, null, DebitFromFreeBalance: true)));
+
+        Assert.Equal("Saldo livre insuficiente.", exception.Message);
+        Assert.Equal(20m, await fx.Balance.GetFreeBalanceAvailableAsync());
+        Assert.Empty(await fx.Db.CostPayments.ToListAsync());
+    }
 }

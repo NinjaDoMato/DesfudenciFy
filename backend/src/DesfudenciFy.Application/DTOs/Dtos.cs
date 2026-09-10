@@ -203,7 +203,7 @@ public record FixedCostDto(
 
 public record CostPaymentDto(Guid Id, decimal PaidAmount, DateTime DatePaid, Guid? EntryId);
 public record UpsertFixedCostRequest(string Name, string Description, decimal Amount, string Recurrence, DateTime? DueDate, Guid? ReserveId);
-public record CreateCostPaymentRequest(decimal PaidAmount, DateTime? DatePaid);
+public record CreateCostPaymentRequest(decimal PaidAmount, DateTime? DatePaid, bool DebitFromFreeBalance = false);
 
 public record IncomeTypeDto(Guid Id, string Name, string? Description, bool IsActive);
 public record UpsertIncomeTypeRequest(string Name, string? Description, bool IsActive);
