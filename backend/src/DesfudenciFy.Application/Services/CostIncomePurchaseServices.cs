@@ -121,8 +121,9 @@ public class FixedCostService
             EntryId = entryId
         };
         _db.Add(payment);
-        cost.Payments.Add(payment);
-        SyncDueDateFromLastPayment(cost);
+        // Next due is always last payment date + one recurrence step (this payment is the latest).
+        cost.DueDate = NormalizeDueDate(
+            RecurrenceCalculator.AdvanceDueDate(payment.DatePaid, cost.Recurrence));
         await _db.SaveChangesAsync(cancellationToken);
 
         return new CostPaymentDto(payment.Id, payment.PaidAmount, payment.DatePaid, payment.EntryId);
@@ -144,6 +145,7 @@ public class FixedCostService
         }
 
         var removedDatePaid = payment.DatePaid;
+        cost.Payments.Remove(payment);
         _db.Remove(payment);
         SyncDueDateFromLastPayment(cost, excludingPaymentId: payment.Id, fallbackDueDateWhenEmpty: removedDatePaid);
         await _db.SaveChangesAsync(cancellationToken);
